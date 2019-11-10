@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:paddingTop="50dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Group 15 IoT Genius\nAutomatic key generation for on body devices\nPlease select your role"
+        android:textSize="17sp"
+        android:textColor="#000000"
+        android:textAlignment="center"/>
+
+    <Button
+        android:id="@+id/client"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp"
+        android:textColor="#000000"
+        android:textSize="17sp"
+        android:text="client"
+        android:textAlignment="center"/>
+
+    <Button
+        android:id="@+id/server"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp"
+        android:textColor="#000000"
+        android:textSize="17sp"
+        android:text="server"
+        android:textAlignment="center"/>
+
+
+</LinearLayout>
