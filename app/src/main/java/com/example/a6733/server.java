@@ -254,7 +254,7 @@ public class server
 
 
             if (DateUtil.getNowSecond() > 30){
-                minute += 2;
+                minute = minute + 2;
             }
             else{
                 minute += 1;
