@@ -24,7 +24,7 @@ public class DateUtil {
     }
 
     public static int getNowSecond() {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH");
+        SimpleDateFormat sdf = new SimpleDateFormat("ss");
         return Integer.parseInt(sdf.format(new Date()));
     }
 }
