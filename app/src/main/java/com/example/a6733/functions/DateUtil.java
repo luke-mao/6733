@@ -17,4 +17,14 @@ public class DateUtil {
         return sdf.format(new Date());
     }
 
+    // note this function returns an integer
+    public static int getNowMinute() {
+        SimpleDateFormat sdf = new SimpleDateFormat("mm");
+        return Integer.parseInt(sdf.format(new Date()));
+    }
+
+    public static int getNowSecond() {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH");
+        return Integer.parseInt(sdf.format(new Date()));
+    }
 }
