@@ -176,6 +176,7 @@ public class server
                         // send the response "connect" for this particular message
                         new Thread(new thread_udp_send("connect", false)).start();
                         first_time_message = false;
+                        new Thread(new thread_timer()).start();
                     }
                     else{
                         runOnUiThread(new Runnable() {
@@ -244,6 +245,40 @@ public class server
         }
     }
 
+    class thread_timer implements Runnable{
+
+        @Override
+        public void run(){
+
+            int minute = DateUtil.getNowMinute();
+
+
+            if (DateUtil.getNowSecond() > 30){
+                minute += 2;
+            }
+            else{
+                minute += 1;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    server_tv_2.setText(DateUtil.getNowTime()+" Prepare for sampling...\n");
+                }
+            });
+
+            while (DateUtil.getNowMinute() != minute){
+                continue;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    server_tv_2.append(DateUtil.getNowTime() + " Start Sampling");
+                }
+                /*Here you can call your thread for the sampling*/
+            });
+        }
+    }
 
 
     /*Get the local host ip address*/

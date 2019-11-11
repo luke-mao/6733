@@ -132,7 +132,6 @@ public class client
 
 
                 // start the sending thread, send message "connect"
-
                 new Thread(new thread_udp_listen()).start();
 
             }
@@ -190,7 +189,13 @@ public class client
 
                     /*If the client first receive message, do not show
                     * Other cases show the message*/
-                    if (! first_time_message){
+                    if (first_time_message){
+
+                        first_time_message = false;
+                        /*start the timer thread*/
+                        new Thread(new thread_timer()).start();
+                    }
+                    else {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -198,7 +203,6 @@ public class client
                             }
                         });
                     }
-                    first_time_message =false;
                 }
             }
             catch (Exception e) {
@@ -248,6 +252,41 @@ public class client
                 Log.d(TAG, "error: thread udp send");
                 e.printStackTrace();
             }
+        }
+    }
+
+    class thread_timer implements Runnable{
+
+        @Override
+        public void run(){
+
+            int minute = DateUtil.getNowMinute();
+
+            if (DateUtil.getNowSecond() > 30){
+                minute += 2;
+            }
+            else{
+                minute += 1;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    client_tv_2.setText(DateUtil.getNowTime()+" Prepare for sampling...\n");
+                }
+            });
+
+            while (DateUtil.getNowMinute() != minute){
+                continue;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    client_tv_2.append(DateUtil.getNowTime() + " Start Sampling");
+                }
+
+                /*At here call your thread for sampling */
+            });
         }
     }
 
