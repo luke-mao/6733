@@ -33,6 +33,13 @@ public class server
      * The server page has 3 text view parts to manipulate
      * They will be detailed below*/
 
+    /*Counter of incoming message
+    * 1 = connect message
+    * 2 = as bob, receive the L_alice from client
+    * if everything agrees, 3 = start_encrypt (then from counter >= 4, use the encryption channel)
+    * if not match, 3 = reject*/
+    int message_count = 0;
+
     /*Define all the thread here*/
 
 
@@ -149,9 +156,12 @@ public class server
                     );
 
                     socket.receive(packet);
+                    message_count++;
 
-
-
+                    // for the first message:
+                    // for the second message:
+                    // for the third message:
+                    // if there is number 4 message and later on, use encryption channel
 
                     // at the first time, the message comes with a word  "connect"
                     // use this to determine the inet address of sender and port number'
