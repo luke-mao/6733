@@ -39,6 +39,7 @@ import android.os.Bundle;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Arrays;
 import java.util.Timer;
@@ -88,13 +89,13 @@ public class client
     String TAG = "Client: ";
 
 
-    public int[] L_Alice_x;
-    public int[] L_Alice_y;
-    public int[] L_Alice_z;
+    public int[] L_Alice_x = new int[70];
+    public int[] L_Alice_y = new int[70];
+    public int[] L_Alice_z = new int[70];
 
-    public int[] key_Alice_x;
-    public int[] key_Alice_y;
-    public int[] key_Alice_z;
+    public int[] key_Alice_x = new int[70];
+    public int[] key_Alice_y = new int[70];
+    public int[] key_Alice_z = new int[70];
 
     reconciliation_alice alice;
 
@@ -246,10 +247,13 @@ public class client
             case Sensor.TYPE_ACCELEROMETER:
                 // count how many samples have been recorded
                 if (start_recording_flag) {
-                    start_recording_flag = false;
+
                     sensor_sample_count++;
                     if (sensor_sample_count == 750) {
+                        start_recording_flag = false;
                         generateKey();
+                        extractBits();
+                        Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
                         acc_n[sensor_sample_count] = (double) accel_gl[1];
@@ -416,6 +420,43 @@ public class client
     public void calculateAccMagOrientation() {
         if(SensorManager.getRotationMatrix(rotationMatrix, null, accel, magnet)) {
             SensorManager.getOrientation(rotationMatrix, accMagOrientation);
+        }
+    }
+
+    public void extractBits() {
+        int i;
+        int j = 0;
+        int k = 1;
+
+        for (i=0; i < 70; i++) {
+            if (bits_e[i] <= 1) {
+                key_Alice_x[j] = bits_e[i];
+                L_Alice_x[j] = k;
+                k++;
+                j++;
+            }
+        }
+
+        j = 0;
+        k = 1;
+        for (i=0; i < 70; i++) {
+            if (bits_n[i] <= 1) {
+                key_Alice_y[j] = bits_n[i];
+                L_Alice_y[j] = k;
+                k++;
+                j++;
+            }
+        }
+
+        j = 0;
+        k = 1;
+        for (i=0; i < 70; i++) {
+            if (bits_g[i] <= 1) {
+                key_Alice_z[j] = bits_g[i];
+                L_Alice_z[j] = k;
+                k++;
+                j++;
+            }
         }
     }
 
@@ -630,9 +671,66 @@ public class client
         }
         else if (v.getId() == R.id.client_sample_start){
 
-            new Thread(new thread_timer()).start();
+            int minute = DateUtil.getNowMinute();
+            final int addition;     // additional time added
+
+            if (DateUtil.getNowSecond() > 30){
+                minute += 2;
+                addition = 2;
+            }
+            else{
+                minute += 1;
+                addition = 1;
+            }
+
+
+//            client_tv_1.append(
+//                    DateUtil.getNowTime()+" Prepare for sampling less than " + addition + " minutes...\n"
+//            );
+
+
+//            while (DateUtil.getNowMinute() != minute){
+//                continue;
+//            }
+
+            Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
+            Log.d("Client", "sample start");
+
+            // start the sampling
+            //new Thread(new sampling()).start();     // straight after the time is reached, start the sampling
+
+            start_recording_flag = true;
+            sensor_sample_count = 0;
+
+            //client_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
+
+
+                /*At here call your thread for sampling */
+
+
+//            try{
+//                Thread.currentThread().wait(10000);
+//            }
+//            catch (Exception e){
+//                Log.d("client sampling T", "Wrong in thread wait");
+//                e.printStackTrace();
+//            }
+
+//            while(true) {
+//                if (sensor_sample_count == 750) {
+//                    break;
+//                }
+//            }
+
+
+            // report on the main screen
+
+//            client_tv_1.append(DateUtil.getNowTime() + " Sampling finish\n");
+//            Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
+
         }
     }
+
 
 
 
@@ -780,146 +878,7 @@ public class client
         }
     }
 
-    class thread_timer implements Runnable{
 
-        @Override
-        public void run(){
-
-            int minute = DateUtil.getNowMinute();
-            final int addition;     // additional time added
-
-            if (DateUtil.getNowSecond() > 30){
-                minute += 2;
-                addition = 2;
-            }
-            else{
-                minute += 1;
-                addition = 1;
-            }
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    client_tv_1.append(
-                            DateUtil.getNowTime()+" Prepare for sampling less than " + addition + " minutes...\n"
-                    );
-                }
-            });
-
-            while (DateUtil.getNowMinute() != minute){
-                continue;
-            }
-            start_recording_flag = true;
-            sensor_sample_count = 0;
-            // start the sampling
-            new Thread(new sampling()).start();     // straight after the time is reached, start the sampling
-
-            // report on the main screen
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    client_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
-                }
-
-                /*At here call your thread for sampling */
-            });
-        }
-    }
-
-    class sampling implements Runnable{
-
-        /*this part is the sampling, it should return L int[] and key int[]*/
-        @Override
-        public void run(){
-
-            ///////
-            /*the code here should derive the following variables
-             * they are decleared at the top of the page*/
-
-            int i = 0;
-            int j = 0;
-            int k = 1;
-
-            for (i=0; i < 70; i++) {
-                if (bits_e[i] <= 1) {
-                    key_Alice_x[j] = bits_e[i];
-                    j++;
-                }
-                if (bits_e[i] <= 1) {
-                    L_Alice_x[j] = k;
-                    j++;
-                    k++;
-                }
-            }
-
-            j = 0;
-            k = 1;
-            for (i=0; i < 70; i++) {
-                if (bits_n[i] <= 1) {
-                    key_Alice_y[j] = bits_n[i];
-                    j++;
-                }
-                if (bits_n[i] <= 1) {
-                    L_Alice_y[j] = k;
-                    j++;
-                    k++;
-                }
-            }
-
-            j = 0;
-            k = 1;
-            for (i=0; i < 70; i++) {
-                if (bits_g[i] <= 1) {
-                    key_Alice_z[j] = bits_g[i];
-                    j++;
-                }
-                if (bits_g[i] <= 1) {
-                    L_Alice_z[j] = k;
-                    j++;
-                    k++;
-                }
-            }
-//            L_Alice_x = new int[] {1,2,3,5,6,7,9,10};
-//            L_Alice_y = new int[]{1,2,3,5,6,7,9,10};
-//            L_Alice_z = new int[]{1,2,3,5,6,7,9,10};
-//
-//            key_Alice_x =new int[] {1,0,1,1,0,1,1,0};
-//            key_Alice_y = new int[]{1,0,1,1,0,1,1,0};
-//            key_Alice_z = new int[]{1,0,1,1,0,1,1,0};
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    client_tv_1.append(DateUtil.getNowTime() + " Sampling finish\n");
-                }
-
-                /*At here call your thread for sampling */
-            });
-
-        }
-    }
-
-
-    /*    *//*now goes the reconciliation, this is Alice, send message first*//*
-    String alice_message = reconciliation_function.combine_three_acc_strings(
-            reconciliation_function.int_array_to_string(L_Alice_x),
-            reconciliation_function.int_array_to_string(L_Alice_y),
-            reconciliation_function.int_array_to_string(L_Alice_z)
-    );
-
-    *//*alice sends the L_Alice first to bob*//*
-            new Thread(new thread_udp_send(alice_message.getBytes())).start();
-
-            Log.d("Client Alice message:", alice_message);
-
-    runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-            client_tv_2.append(DateUtil.getNowTime() + " Alice send message\n");
-        }
-
-        *//*At here call your thread for sampling *//*
-    });*/
 
 
     /*function: get the local host ip address
