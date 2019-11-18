@@ -1,6 +1,7 @@
 package com.example.a6733;
 
 import com.example.a6733.functions.DateUtil;
+import com.example.a6733.functions.reconciliation_bob;
 
 import android.annotation.SuppressLint;
 import android.net.wifi.WifiInfo;
@@ -21,6 +22,29 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Date;
 
+// Libraries for bit generator
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ScaleGestureDetectorCompat;
+
+import android.annotation.SuppressLint;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.os.Build;
+import android.os.Bundle;
+
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.widget.TextView;
+
+import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import flanagan.analysis.CurveSmooth;
+
+import static java.lang.Float.NaN;
+
 
 public class server
         extends AppCompatActivity
@@ -33,12 +57,6 @@ public class server
      * The server page has 3 text view parts to manipulate
      * They will be detailed below*/
 
-    /*Counter of incoming message
-    * 1 = connect message
-    * 2 = as bob, receive the L_alice from client
-    * if everything agrees, 3 = start_encrypt (then from counter >= 4, use the encryption channel)
-    * if not match, 3 = reject*/
-    int message_count = 0;
 
     /*Define all the thread here*/
 
@@ -66,10 +84,20 @@ public class server
     int client_port, server_port;
     InetAddress inet_client_address;
     DatagramSocket socket;
-    boolean first_time_message = true;
 
     /*TAG*/
     String TAG = "Server: ";
+
+    int[] L_Bob_x;
+    int[] L_Bob_y;
+    int[] L_Bob_z;
+
+    int[] key_Bob_x;
+    int[] key_Bob_y;
+    int[] key_Bob_z;
+
+    reconciliation_bob bob;     // define the class first
+
 
 
     @Override
@@ -89,14 +117,13 @@ public class server
         server_tv_ip = findViewById(R.id.server_ip);
         server_tv_port = findViewById(R.id.server_port);
 
-        try{
+        try {
             server_ip = getLocalIpAddress();
             server_port = 8080;
 
             server_tv_ip.append(server_ip);
             server_tv_port.append("8080");
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             Log.d(TAG, "Error get local ip address");
             e.printStackTrace();
         }
@@ -104,36 +131,42 @@ public class server
         /*Get the two buttons with click listener, details defined later in function onClick*/
         findViewById(R.id.server_send).setOnClickListener(this);
 
-        try{
+        findViewById(R.id.server_sample_start).setOnClickListener(this);
+
+        try {
             socket = new DatagramSocket(server_port);
             socket.setReuseAddress(true);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             Log.d(TAG, "error open the socket");
         }
 
-        new Thread(new thread_udp_listen()).start();
+        //new Thread(new thread_udp_listen()).start();
+
+
     }
 
 
     /*onClick function: for buttons*/
     @Override
-    public void onClick(View v){
+    public void onClick(View v) {
 
-        if (v.getId() == R.id.server_send){
+        if (v.getId() == R.id.server_send) {
 
             /*Send the message using the thread
              * Clean the input box*/
             String message = server_et.getText().toString();
             server_et.setText("");
 
-            if (! message.isEmpty()){
-                new Thread(new thread_udp_send(message, true)).start();
+            if (!message.isEmpty()) {
+                new Thread(new thread_udp_send(message.getBytes())).start();
             }
         }
-    }
+        else if (v.getId() == R.id.server_sample_start){
 
+            new Thread(new thread_timer()).start();
+        }
+    }
 
 
     /*thread_udp_listen
@@ -145,18 +178,20 @@ public class server
         @Override
         public void run() {
             try {
+                /*messenge_counter, count the message*/
+                int messenge_counter = 0;
 
-                while(true) {
+                while (true) {
 
-                    byte[] buf = new byte[256];
+                    byte[] buffer = new byte[256];
 
                     DatagramPacket packet = new DatagramPacket(
-                            buf,
-                            buf.length
+                            buffer,
+                            buffer.length
                     );
 
                     socket.receive(packet);
-                    message_count++;
+                    messenge_counter++;     //add one to the messenge_counter
 
                     // for the first message:
                     // for the second message:
@@ -165,43 +200,82 @@ public class server
 
                     // at the first time, the message comes with a word  "connect"
                     // use this to determine the inet address of sender and port number'
-                    buf = packet.getData();
-                    final String message = new String(buf, "UTF-8");
+                    byte[] buf = packet.getData();
 
-                    Log.d(TAG, "Message:"+message);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            server_tv_2.append(DateUtil.getNowTime() + "\n" + "receive message\n");
+                        }
+                    });
 
 
                     inet_client_address = packet.getAddress();
                     client_port = packet.getPort();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            server_connection_status.setText("Connected");
 
-                        }
-                    });
 
-                    /*if this is the first time message, then return it*/
-                    if (first_time_message){
-                        // send the response "connect" for this particular message
-                        new Thread(new thread_udp_send("connect", false)).start();
-                        first_time_message = false;
-                        new Thread(new thread_timer()).start();
-                    }
-                    else{
+                    if (messenge_counter == 1) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                server_tv_1.append(DateUtil.getNowTime()+" receive...\n" + message + "\n");
+                                server_connection_status.setText("Connected");
+                            }
+                        });
+                        new Thread(new thread_udp_send("connect".getBytes())).start();
+                        new Thread(new thread_timer()).start();     // start the timer
+
+                    } else if (messenge_counter == 2) {
+                        // this time, client sends L_Alice to the server （me）
+                        //need to run the reconciliation
+
+                        bob = new reconciliation_bob(
+                                buf,  // this is the alice message in byte, but the programme will convert into a string
+                                L_Bob_x, L_Bob_y, L_Bob_z,
+                                key_Bob_x, key_Bob_y, key_Bob_z
+                        );
+
+                        if (bob.decision()){
+
+                            // if continue to connect, send the two meesages
+                            byte[] first_message = bob.first_part_message();
+                            new Thread(new thread_udp_send(first_message)).start();
+
+
+                            byte[] second_message = bob.second_part_message();
+                            new Thread(new thread_udp_send(second_message)).start();
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    server_tv_2.append("\n"+ DateUtil.getNowTime() +"\nPair Success !!!");
+                                }
+                            });
+                        }
+                        else{
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    server_tv_2.append("\n"+ DateUtil.getNowTime() +"\nPair fail !!!");
+                                }
+                            });
+
+                        }
+
+                    } else if (messenge_counter >= 3) {
+
+                        // so now you should use the encryption now
+                        final String message = new String(buf);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                server_tv_1.append(DateUtil.getNowTime() + " receive...\n" + message + "\n");
                             }
                         });
                     }
 
-
-
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Log.d(TAG, "Wrong client receiving thread");
                 e.printStackTrace();
             }
@@ -214,19 +288,17 @@ public class server
      * Input: String message*/
     class thread_udp_send implements Runnable {
 
-        private String message;
-        private boolean displayBoolean;
+        private byte[] message;
 
-        thread_udp_send(String message, boolean displayBoolean) {
+        thread_udp_send(byte[] message) {
             this.message = message;
-            this.displayBoolean = displayBoolean;
         }
 
         @Override
         public void run() {
 
-            try{
-                byte[] buf = message.getBytes("UTF-8");
+            try {
+                byte[] buf = message;
                 DatagramPacket packet = new DatagramPacket(
                         buf,
                         buf.length,
@@ -236,58 +308,88 @@ public class server
 
                 socket.send(packet);
 
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        server_tv_2.append(DateUtil.getNowTime() +"\nserver send message\n");
+                    }
+                });
 
-                if (displayBoolean){
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            server_tv_1.append(DateUtil.getNowTime()+" send...\n" + message + "\n");
-                            Log.d(TAG, "send"+message);
-                        }
-                    });
-                }
 
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 Log.d(TAG, "error: thread udp send");
                 e.printStackTrace();
             }
         }
     }
 
-    class thread_timer implements Runnable{
+    class thread_timer implements Runnable {
 
         @Override
-        public void run(){
+        public void run() {
+
+            final int addition; //additional time added
 
             int minute = DateUtil.getNowMinute();
 
-
-            if (DateUtil.getNowSecond() > 30){
+            if (DateUtil.getNowSecond() > 30) {
                 minute = minute + 2;
-            }
-            else{
+                addition = 2;
+            } else {
                 minute += 1;
+                addition = 1;
             }
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    server_tv_2.setText(DateUtil.getNowTime()+" Prepare for sampling...\n");
+                    server_tv_1.append(
+                            DateUtil.getNowTime() + " Prepare for sampling less than " + addition + " minutes...\n"
+                    );
                 }
             });
 
-            while (DateUtil.getNowMinute() != minute){
+            while (DateUtil.getNowMinute() != minute) {
                 continue;
             }
+            new Thread(new sampling()).start();     // straight after the time is reached, start the sampling
+
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    server_tv_2.append(DateUtil.getNowTime() + " Start Sampling");
+                    server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
                 }
                 /*Here you can call your thread for the sampling*/
             });
 
+        }
+    }
+
+    class sampling implements Runnable {
+
+        /*this part is the sampling, it should return L int[] and key int[]*/
+        @Override
+        public void run() {
+            //////// insert Bit generator here
+
+            L_Bob_x = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+            L_Bob_y = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+            L_Bob_z = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+            key_Bob_x = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+            key_Bob_y = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+            key_Bob_z = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+
+            /*now start the reconciliation
+            * the above code has defined the variable bob, now define its class
+            * alice will send the message first, so now is ok*/
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    server_tv_1.append(DateUtil.getNowTime() + " finish Sampling\n");
+                }
+                /*Here you can call your thread for the sampling*/
+            });
         }
     }
 
@@ -304,7 +406,7 @@ public class server
     }
 
     @Override
-    protected void onDestroy(){
+    protected void onDestroy() {
 
         socket.close();
         super.onDestroy();

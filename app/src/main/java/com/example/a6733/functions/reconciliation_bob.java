@@ -11,10 +11,10 @@ public class reconciliation_bob {
     int[] key_x, key_y, key_z;
 
     /* this is the initialization of the class */
-    public reconciliation_bob(String L_Alice,
+    public reconciliation_bob(byte[] L_Alice,
                               int[] L_x, int[] L_y, int[] L_z,
                               int[] key_x,int[] key_y, int[] key_z){
-        this.L_Alice = L_Alice;
+        this.L_Alice = new String(L_Alice);
         this.L_x = L_x;
         this.L_y = L_y;
         this.L_z = L_z;

@@ -1,5 +1,7 @@
 package com.example.a6733.functions;
 
+import android.util.Log;
+
 import java.security.Key;
 
 import javax.crypto.Mac;
@@ -44,14 +46,26 @@ public class reconciliation_function {
      * essentially the reverse of int_array_to_string*/
     public static int[] string_to_int_array(String input) {
 
+        Log.d("ReconciliationF", input);
         String[] string_array = input.split(",");
+
+
         //convert each element into integer
         int[] int_array = new int[string_array.length];
 
-        for (int i = 0; i < int_array.length; i++) {
+        // now choose to omit the last number
+        for (int i = 0; i < int_array.length -1; i++) {
+
+            Log.d("ReconciliationF:::", string_array[i]);
+
+            // string read wrong at the last number, consider omit the last number? or use regular expression?
 
             int_array[i] = Integer.parseInt(string_array[i]);
         }
+        int_array[int_array.length-1] = 0;
+
+
+
         return int_array;
     }
 
@@ -60,7 +74,7 @@ public class reconciliation_function {
      * use separator symbol "|"*/
     public static String combine_three_acc_strings(String accX, String accY, String accZ) {
 
-        String result = accX + "@" + accY + "@" + accZ;
+        String result = accX + "@" + accY + "@" + accZ + "@";
         return result;
     }
 
@@ -69,7 +83,7 @@ public class reconciliation_function {
      * return a string array: [string accX, string accY, string accZ]*/
     public static String[] split_three_acc_window_strings(String input) {
 
-        String[] result = input.split("@", 3);
+        String[] result = input.split("@", 4);
         return result;
     }
 

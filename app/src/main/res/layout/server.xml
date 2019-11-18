@@ -26,6 +26,14 @@
         android:text="Not connected"
         style="@style/text_style" />
 
+    <Button
+        android:id="@+id/server_sample_start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:text="Start Sample" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -1,6 +1,8 @@
 package com.example.a6733;
 
 import com.example.a6733.functions.DateUtil;
+import com.example.a6733.functions.reconciliation_alice;
+import com.example.a6733.functions.reconciliation_function;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -56,10 +58,20 @@ public class client
     int client_port, server_port;
     InetAddress inet_server_address;
     DatagramSocket socket;
-    boolean first_time_message = true;
 
     /*Use for the log.d printout, use this TAG for client interface issues*/
     String TAG = "Client: ";
+
+
+    int[] L_Alice_x;
+    int[] L_Alice_y;
+    int[] L_Alice_z;
+
+    int[] key_Alice_x;
+    int[] key_Alice_y;
+    int[] key_Alice_z;
+
+    reconciliation_alice alice;
 
 
     @Override
@@ -100,6 +112,7 @@ public class client
         /*Get the two buttons with click listener, details defined later in function onClick*/
         findViewById(R.id.client_button_connect).setOnClickListener(this);
         findViewById(R.id.client_send).setOnClickListener(this);
+        findViewById(R.id.client_sample_start).setOnClickListener(this);
     }
 
 
@@ -128,8 +141,17 @@ public class client
                 // start the sending thread, send message "connect"
                 socket = new DatagramSocket(client_port);
                 socket.setReuseAddress(true);
-                new Thread(new thread_udp_send("connect", false)).start();
 
+
+                // prepare for the Alice message
+                String alice_message = reconciliation_function.combine_three_acc_strings(
+                        reconciliation_function.int_array_to_string(L_Alice_x),
+                        reconciliation_function.int_array_to_string(L_Alice_y),
+                        reconciliation_function.int_array_to_string(L_Alice_z)
+                );
+
+
+                new Thread(new thread_udp_send(alice_message.getBytes())).start();
 
                 // start the sending thread, send message "connect"
                 new Thread(new thread_udp_listen()).start();
@@ -148,8 +170,11 @@ public class client
             client_et.setText("");
 
             if (! message.isEmpty()){
-                new Thread(new thread_udp_send(message, true)).start();
+                new Thread(new thread_udp_send(message.getBytes())).start();
             }
+        }
+        else if (v.getId() == R.id.client_sample_start){
+            new Thread(new thread_timer()).start();
         }
     }
 
@@ -165,6 +190,12 @@ public class client
         public void run() {
             try {
 
+                /*define variable for the counting of messages*/
+                int messenge_counter = 0;
+                byte[] first_message = new byte[] {};
+                byte[] second_message;
+                //boolean start_encryption = false;
+
                 while(true){
 
                     byte[] buf = new byte[256];
@@ -175,35 +206,72 @@ public class client
                     );
 
                     socket.receive(packet);
+                    messenge_counter++;     // add one to the messenger counter
 
                     buf = packet.getData();
-
-                    final String message = new String(buf, "UTF-8");
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            client_connection_status.setText("Connected");
+                            client_tv_2.append(DateUtil.getNowTime() + "\n" + "receive message\n");
                         }
                     });
 
+
                     /*If the client first receive message, do not show
                     * Other cases show the message*/
-                    if (first_time_message){
+                    if (messenge_counter == 1){
+                        first_message = buf;
 
-                        first_time_message = false;
-                        /*start the timer thread*/
-                        new Thread(new thread_timer()).start();
                     }
-                    else {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                client_tv_1.append(DateUtil.getNowTime()+" receive...\n" + message + "\n");
-                            }
-                        });
+                    else if (messenge_counter == 2){
+                        /*bob will send alice two pieces of message
+                        * the first is the L_bar, the second is the MAC message
+                        * put it this way, bob will not cancel any transction, only alice will */
+                        /*this message is not encrypted*/
+                        second_message = buf;
+
+                        /*now alice can run the reconciliation
+                         * simply run it here*/
+                        alice = new reconciliation_alice(
+                                first_message, second_message,
+                                L_Alice_x, L_Alice_y, L_Alice_z,
+                                key_Alice_x, key_Alice_y, key_Alice_z
+                        );
+
+                        if (alice.decision()){
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired success !!");
+                                }
+                            });
+
+                        }
+                        else{
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired fail !!");
+                                }
+                            });
+
+                            break;
+                        }
                     }
+                    else if (messenge_counter == 3){
+                        /*second message from bob
+                        * this message is encrypted*/
+                        continue;
+                    }
+                    else{
+
+                        /*now we need to use the decryption*/
+                        continue; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! fix this part
+                    }
+
                 }
+                Thread.currentThread().interrupt();
             }
             catch (Exception e) {
                 Log.d(TAG, "Wrong client receiving thread");
@@ -215,21 +283,20 @@ public class client
 
     /*thread_udp_send
     * Task: send udp packet to the destinated server ip and port
-    * Input: String message*/
+    * Input: byte[] message
+    * Note that everything is in byte[] only !!!*/
     class thread_udp_send implements Runnable {
-        private String message;
-        private boolean displayBoolean;
+        private byte[] message;
 
-        thread_udp_send(String message, boolean displayBoolean) {
+        thread_udp_send(byte[] message) {
             this.message = message;
-            this.displayBoolean = displayBoolean;
         }
 
         @Override
         public void run() {
 
             try{
-                byte[] buf = message.getBytes("UTF-8");
+                byte[] buf = message;
                 DatagramPacket packet = new DatagramPacket(
                         buf,
                         buf.length,
@@ -238,15 +305,12 @@ public class client
                 );
 
                 socket.send(packet);
-
-                if (displayBoolean){
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            client_tv_1.append(DateUtil.getNowTime()+" send...\n" + message + "\n");
-                        }
-                    });
-                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        client_tv_2.append(DateUtil.getNowTime() +" client send message\n");
+                    }
+                });
             }
             catch (Exception e){
                 Log.d(TAG, "error: thread udp send");
@@ -261,34 +325,95 @@ public class client
         public void run(){
 
             int minute = DateUtil.getNowMinute();
+            final int addition;     // additional time added
 
             if (DateUtil.getNowSecond() > 30){
                 minute += 2;
+                addition = 2;
             }
             else{
                 minute += 1;
+                addition = 1;
             }
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    client_tv_2.setText(DateUtil.getNowTime()+" Prepare for sampling...\n");
+                    client_tv_1.append(
+                            DateUtil.getNowTime()+" Prepare for sampling less than " + addition + " minutes...\n"
+                    );
                 }
             });
 
             while (DateUtil.getNowMinute() != minute){
                 continue;
             }
+
+            // start the sampling
+            new Thread(new sampling()).start();     // straight after the time is reached, start the sampling
+
+            // report on the main screen
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    client_tv_2.append(DateUtil.getNowTime() + " Start Sampling");
+                    client_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
                 }
 
                 /*At here call your thread for sampling */
             });
         }
     }
+
+    class sampling implements Runnable{
+
+        /*this part is the sampling, it should return L int[] and key int[]*/
+        @Override
+        public void run(){
+
+            ///////
+            /*the code here should derive the following variables
+            * they are decleared at the top of the page*/
+            L_Alice_x = new int[] {1,2,3,5,6,7,9,10};
+            L_Alice_y = new int[]{1,2,3,5,6,7,9,10};
+            L_Alice_z = new int[]{1,2,3,5,6,7,9,10};
+
+            key_Alice_x =new int[] {1,0,1,1,0,1,1,0};
+            key_Alice_y = new int[]{1,0,1,1,0,1,1,0};
+            key_Alice_z = new int[]{1,0,1,1,0,1,1,0};
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    client_tv_1.append(DateUtil.getNowTime() + " Sampling finish\n");
+                }
+
+                /*At here call your thread for sampling */
+            });
+
+        }
+    }
+
+
+/*    *//*now goes the reconciliation, this is Alice, send message first*//*
+    String alice_message = reconciliation_function.combine_three_acc_strings(
+            reconciliation_function.int_array_to_string(L_Alice_x),
+            reconciliation_function.int_array_to_string(L_Alice_y),
+            reconciliation_function.int_array_to_string(L_Alice_z)
+    );
+
+    *//*alice sends the L_Alice first to bob*//*
+            new Thread(new thread_udp_send(alice_message.getBytes())).start();
+
+            Log.d("Client Alice message:", alice_message);
+
+    runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+            client_tv_2.append(DateUtil.getNowTime() + " Alice send message\n");
+        }
+
+        *//*At here call your thread for sampling *//*
+    });*/
 
 
     /*function: get the local host ip address

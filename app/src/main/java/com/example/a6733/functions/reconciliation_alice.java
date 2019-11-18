@@ -3,9 +3,13 @@ package com.example.a6733.functions;
 import com.example.a6733.functions.reconciliation_function;
 import java.util.Arrays;
 
-public class reconciliation_alice {
+public class reconciliation_alice{
 
     /* CLIENT is the alice, send the message first*/
+    /* CLIENT is the alice, send the message first*/
+    /* CLIENT is the alice, send the message first*/
+
+
 
     /*this is the alice part, alice needs to receive two messages from bob
      * First message is L_bar, second message is the MAC encryption
@@ -15,6 +19,7 @@ public class reconciliation_alice {
     byte[] second_message;
     int[] L_x, L_y, L_z;
     int[] key_x, key_y, key_z;
+    int[] key;
 
     public reconciliation_alice(byte[] first_message, byte[] second_message,
                                 int[] L_x, int[] L_y, int[] L_z,
@@ -42,7 +47,7 @@ public class reconciliation_alice {
         int[] L_intersection_z = reconciliation_function.string_to_int_array(string_window[2]);
 
         //now find the alice total key
-        int[] key = reconciliation_function.intersection_keys_three_directions(
+        key = reconciliation_function.intersection_keys_three_directions(
                 key_x, L_x, L_intersection_x,
                 key_y, L_y, L_intersection_y,
                 key_z, L_z, L_intersection_z
@@ -57,4 +62,5 @@ public class reconciliation_alice {
 
         return Arrays.equals(alice_mac, second_message);
     }
+
 }

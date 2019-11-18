@@ -32,6 +32,14 @@
         android:inputType="number" />
 
     <Button
+        android:id="@+id/client_sample_start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:text="Start Sample" />
+
+    <Button
         android:id="@+id/client_button_connect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
