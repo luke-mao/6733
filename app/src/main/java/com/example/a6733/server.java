@@ -260,6 +260,7 @@ public class server
                         generateKey();
                         extractBits();
                         Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
+                        server_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
                         acc_n[sensor_sample_count] = (double) accel_gl[1];
@@ -634,6 +635,15 @@ public class server
         }
         else if (v.getId() == R.id.server_sample_start){
 
+            new Thread(new thread_timer()).start();
+        }
+    }
+
+
+    class thread_timer implements Runnable {
+
+        @Override
+        public void run(){
             final int addition; //additional time added
 
             int minute = DateUtil.getNowMinute();
@@ -646,88 +656,37 @@ public class server
                 addition = 1;
             }
 
-//            server_tv_1.append(
-//                    DateUtil.getNowTime() + " Prepare for sampling less than " + addition + " minutes...\n"
-//            );
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    server_tv_1.append(
+                            DateUtil.getNowTime() + " Prepare for sampling less than " + addition + " minutes...\n"
+                    );
+                }
+            });
 
 
-
-//            while (DateUtil.getNowMinute() != minute) {
-//                continue;
-//            }
+            while (DateUtil.getNowMinute() != minute) {
+                continue;
+            }
 
 
             //server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
             //Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
             Log.d("Server", "sample start");
-            Toast.makeText(this, "Start Sampling", Toast.LENGTH_SHORT).show();
-
-
-                /*Here you can call your thread for the sampling*/
-
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
+                }
+            });
 
             start_recording_flag = true;
             sensor_sample_count = 0;
-
-
-//            while(true) {
-//                if (sensor_sample_count == 750) {
-//                    break;
-//                }
-//            }
-//
-//
-//            //////// insert Bit generator here
-//            int i = 0;
-//            int j = 0;
-//            int k = 1;
-//
-//            for (i=0; i < 70; i++) {
-//                if (bits_e[i] <= 1) {
-//                    key_Bob_x[j] = bits_e[i];
-//                    L_Bob_x[j] = k;
-//                    k++;
-//                    j++;
-//                }
-//            }
-//
-//            j = 0;
-//            k = 1;
-//            for (i=0; i < 70; i++) {
-//                if (bits_n[i] <= 1) {
-//                    key_Bob_y[j] = bits_n[i];
-//                    L_Bob_y[j] = k;
-//                    k++;
-//                    j++;
-//                }
-//            }
-//
-//            j = 0;
-//            k = 1;
-//            for (i=0; i < 70; i++) {
-//                if (bits_g[i] <= 1) {
-//                    key_Bob_z[j] = bits_g[i];
-//                    L_Bob_z[j] = k;
-//                    k++;
-//                    j++;
-//                }
-//            }
-
-//            L_Bob_x = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-//            L_Bob_y = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-//            L_Bob_z = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-//
-//            key_Bob_x = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-//            key_Bob_y = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-//            key_Bob_z = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-
-            /*now start the reconciliation
-             * the above code has defined the variable bob, now define its class
-             * alice will send the message first, so now is ok*/
-            //server_tv_1.append(DateUtil.getNowTime() + " finish Sampling\n");
-
         }
     }
+
+
 
 
     /*thread_udp_listen

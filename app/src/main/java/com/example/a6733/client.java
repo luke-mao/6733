@@ -253,7 +253,10 @@ public class client
                         start_recording_flag = false;
                         generateKey();
                         extractBits();
+
                         Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
+                        client_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
+
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
                         acc_n[sensor_sample_count] = (double) accel_gl[1];
@@ -671,66 +674,56 @@ public class client
         }
         else if (v.getId() == R.id.client_sample_start){
 
-            int minute = DateUtil.getNowMinute();
-            final int addition;     // additional time added
+            new Thread(new thread_timer()).start();
+        }
+    }
 
-            if (DateUtil.getNowSecond() > 30){
-                minute += 2;
+
+    class thread_timer implements Runnable {
+
+        @Override
+        public void run(){
+            final int addition; //additional time added
+
+            int minute = DateUtil.getNowMinute();
+
+            if (DateUtil.getNowSecond() > 30) {
+                minute = minute + 2;
                 addition = 2;
-            }
-            else{
+            } else {
                 minute += 1;
                 addition = 1;
             }
 
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    client_tv_1.append(
+                            DateUtil.getNowTime() + " Prepare for sampling less than " + addition + " minutes...\n"
+                    );
+                }
+            });
 
-//            client_tv_1.append(
-//                    DateUtil.getNowTime()+" Prepare for sampling less than " + addition + " minutes...\n"
-//            );
+
+            while (DateUtil.getNowMinute() != minute) {
+                continue;
+            }
 
 
-//            while (DateUtil.getNowMinute() != minute){
-//                continue;
-//            }
-
-            Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
-            Log.d("Client", "sample start");
-
-            // start the sampling
-            //new Thread(new sampling()).start();     // straight after the time is reached, start the sampling
+            //server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
+            //Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
+            Log.d("Server", "sample start");
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    client_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
+                }
+            });
 
             start_recording_flag = true;
             sensor_sample_count = 0;
-
-            //client_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
-
-
-                /*At here call your thread for sampling */
-
-
-//            try{
-//                Thread.currentThread().wait(10000);
-//            }
-//            catch (Exception e){
-//                Log.d("client sampling T", "Wrong in thread wait");
-//                e.printStackTrace();
-//            }
-
-//            while(true) {
-//                if (sensor_sample_count == 750) {
-//                    break;
-//                }
-//            }
-
-
-            // report on the main screen
-
-//            client_tv_1.append(DateUtil.getNowTime() + " Sampling finish\n");
-//            Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
-
         }
     }
-
 
 
 
