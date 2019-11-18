@@ -90,17 +90,20 @@ public class server
     /*TAG*/
     String TAG = "Server: ";
 
-    int[] L_Bob_x;
-    int[] L_Bob_y;
-    int[] L_Bob_z;
+    public int[] L_Bob_x;
+    public int[] L_Bob_y;
+    public int[] L_Bob_z;
 
-    int[] key_Bob_x;
-    int[] key_Bob_y;
-    int[] key_Bob_z;
+    public int[] key_Bob_x;
+    public int[] key_Bob_y;
+    public int[] key_Bob_z;
 
     String mykey;
 
     reconciliation_bob bob;     // define the class first
+
+    // Temporary variables to store sensor data
+
 
     private SensorManager mSensorManager = null;
     // angular speeds from gyro
@@ -123,16 +126,6 @@ public class server
     // accelerometer vector in global/earth frame
     private float[] accel_gl = new float[3];
 
-    private TextView tv_value1;
-    private TextView tv_value2;
-    private TextView tv_value3;
-    private TextView tv_value4;
-    private TextView tv_value5;
-    private TextView tv_value6;
-    private TextView tv_value7;
-    private TextView tv_value8;
-
-
     private float Zn_6 = NaN;
     private float Zn_5 = NaN;
     private float Zn_4 = NaN;
@@ -144,15 +137,21 @@ public class server
     private boolean request_flag = false;
     private int sensor_sample_count = 0;
 
-    private double[] acc_g = new double[2000];
-    private double[] smoothed_acc_g = new double[2000];
-    private int[] bits = new int[200];
+    public double[] acc_g = new double[750];
+    public double[] acc_n = new double[750];
+    public double[] acc_e = new double[750];
+    public double[] smoothed_acc_g = new double[750];
+    public double[] smoothed_acc_n = new double[750];
+    public double[] smoothed_acc_e = new double[750];
+    public int[] bits_g = new int[70];
+    public int[] bits_n = new int[70];
+    public int[] bits_e = new int[70];
+    public int[] bits = new int[210];
 
     private double mean = 0;
     private double stdev = 0;
     private double upper_ts = 0;
     private double lower_ts = 0;
-
 
     // prev_peak time in millis
     private long t_peak = 0;
@@ -162,6 +161,8 @@ public class server
     public static final int TIME_CONSTANT = 33;
     public static final float FILTER_COEFFICIENT = 0.98f;
     private Timer fuseTimer = new Timer();
+
+    public boolean start_recording_flag = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -206,6 +207,10 @@ public class server
 
         //new Thread(new thread_udp_listen()).start();
 
+
+
+        /* ------------------------------------------------------------------- */
+
         // ini gyro
         gyroOrientation[0] = 0.0f;
         gyroOrientation[1] = 0.0f;
@@ -217,24 +222,357 @@ public class server
 
 
         mSensorManager = (SensorManager) this.getSystemService(SENSOR_SERVICE);
+        initListeners();
 
-        bindViews();
+        // wait for 1 sec until sensors are initialised
+        fuseTimer.scheduleAtFixedRate(new calculateFusedOrientationTask(),
+                1000, TIME_CONSTANT);
     }
 
+    public void initListeners(){
+        /*100Hz*/
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                10000);
 
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                10000);
 
-    private void bindViews() {
-        // TextView
-        tv_value1 = findViewById(R.id.tv_value1);
-        tv_value2 = findViewById(R.id.tv_value2);
-        tv_value3 = findViewById(R.id.tv_value3);
-        tv_value4 = findViewById(R.id.tv_value4);
-        tv_value5 = findViewById(R.id.tv_value5);
-        tv_value6 = findViewById(R.id.tv_value6);
-        tv_value7 = findViewById(R.id.tv_value7);
-        tv_value8 = findViewById(R.id.tv_value8);
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+                10000);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    @SuppressLint("SetTextI18n")
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        switch(event.sensor.getType()) {
+            case Sensor.TYPE_ACCELEROMETER:
+                // count how many samples have been recorded
+                if (start_recording_flag) {
+                    start_recording_flag = false;
+                    sensor_sample_count++;
+                    if (sensor_sample_count == 750) {
+                        generateKey();
+                    } else if (sensor_sample_count < 750) {
+                        acc_e[sensor_sample_count] = (double) accel_gl[0];
+                        acc_n[sensor_sample_count] = (double) accel_gl[1];
+                        acc_g[sensor_sample_count] = (double) accel_gl[2];
+                    }
+                }
+                // copy new accelerometer data into accel array
+                // then calculate new orientation
+                System.arraycopy(event.values, 0, accel, 0, 3);
+                calculateAccMagOrientation();
+                break;
+
+            case Sensor.TYPE_GYROSCOPE:
+                // process gyro data
+                gyroFunction(event);
+                break;
+
+            case Sensor.TYPE_MAGNETIC_FIELD:
+                // copy new magnetometer data into magnet array
+                System.arraycopy(event.values, 0, magnet, 0, 3);
+                break;
+        }
+
+//        tv_value1.setText("azimuth：" +
+//                Math.round(Math.toDegrees(fusedOrientation[0]) * 10f) / 10f + "\t\t||\t" +
+//                Math.round(Math.toDegrees(accMagOrientation[0]) * 10f) / 10f);
+//        tv_value2.setText("pitch：     " +
+//                Math.round(Math.toDegrees(fusedOrientation[1]) * 10f) / 10f + "\t\t||\t" +
+//                Math.round(Math.toDegrees(accMagOrientation[1]) * 10f) / 10f);
+//        tv_value3.setText("roll：        " +
+//                (Math.round(Math.toDegrees(fusedOrientation[2]) * 10f) / 10f) + "\t\t||\t" +
+//                Math.round(Math.toDegrees(accMagOrientation[2]) * 10f) / 10f);
+
+        // After find fusedOrientation[3], acc_gl can be estimated:
+        float[] rot = getRotationMatrixFromOrientation(fusedOrientation);
+
+        float accel_gl_x_raw = accel_gl[0] = accel[0] * rot[0] + accel[1] * rot[1] + accel[2] * rot[2];
+        float accel_gl_y_raw = accel_gl[1] = accel[0] * rot[3] + accel[1] * rot[4] + accel[2] * rot[5];
+        float accel_gl_z_raw = accel[0] * rot[6] + accel[1] * rot[7] + accel[2] * rot[8];
+
+        // Then apply low pass filter to accel on z-axis:
+        // A low-pass filter passes low-frequency signals/values and attenuates
+        // (reduces the amplitude of) signals/values with frequencies higher than
+        // the cutoff frequency.
+
+        // To detect heel-strike, we ﬁrst apply a low-pass ﬁlter on acceleration along the
+        // gravity direction to reduce noise.
+        /* The cutoff frequency is chosen as 3Hz
+           lpf_scaler = tau / (tau + t_PWM)
+           FOR:
+                tau = 1 / (2 * pi * cut_off_freq) = 0.05305164769
+                t_PWM = 1 / freq_PWM = 0.01 (100 HZ)
+           THUS:
+                lpf_scaler = 0.8414f */
+        // acceleration in earth/global frame after applying LPF:
+        accel_gl[0] = 0.8414f * accel_gl[0] +  (1 - 0.8414f) * accel_gl_x_raw;
+        accel_gl[1] = 0.8414f * accel_gl[1] +  (1 - 0.8414f) * accel_gl_y_raw;
+        accel_gl[2] = 0.8414f * accel_gl[2] +  (1 - 0.8414f) * accel_gl_z_raw;
+
+//        tv_value4.setText("accel_x：   " + Math.round(accel_gl[0] * 10f) / 10f);
+//        tv_value5.setText("accel_y：   " + Math.round(accel_gl[1] * 10f) / 10f);
+//        tv_value6.setText("accel_z：   " + Math.round(accel_gl[2] * 10f) / 10f);
+
+        /*
+        The peak of acceleration along the gravity direction indicates a heel-strike
+        To detect peak, we find peak point Xn-2 which satisfy:
+            "Zn_6 < Zn_5 < Zn_4 < Zn_3 > Zn_2 > Zn_1 > Zn" && Zn_3 > 9.81
+        */
+        Zn_6 = Zn_5;
+        Zn_5 = Zn_4;
+        Zn_4 = Zn_3;
+        Zn_3 = Zn_2;
+        Zn_2 = Zn_1;
+        Zn_1 = Zn;
+        Zn = accel_gl[2];
+
+        if (Zn_6 < Zn_5 && Zn_5 < Zn_4 && Zn_4 < Zn_3
+                && Zn_3 > Zn_2 && Zn_2 > Zn_1 && Zn_1 > Zn && Zn_3 > 11.2){
+            if (System.currentTimeMillis() - t_peak > 250) {
+                t_peak = System.currentTimeMillis();
+                steps++;
+            }
+        }
+//        else {
+//            tv_value7.setText("Steps: " + steps);
+//        }
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void generateKey(){
+        // copy 2000 LPF acc_g samples (start from 50 for avoiding initial sensor noise)
+        // and get SGpoly filtered acc_g data
+        CurveSmooth csm_g = new CurveSmooth(Arrays.copyOfRange(acc_g, 50, 750));
+        csm_g.setSGpolyDegree(3);
+        CurveSmooth csm_n = new CurveSmooth(Arrays.copyOfRange(acc_n, 50, 750));
+        csm_n.setSGpolyDegree(3);
+        CurveSmooth csm_e = new CurveSmooth(Arrays.copyOfRange(acc_e, 50, 750));
+        csm_e.setSGpolyDegree(3);
+        smoothed_acc_g = csm_g.savitzkyGolay(37);
+        smoothed_acc_n = csm_n.savitzkyGolay(37);
+        smoothed_acc_e = csm_e.savitzkyGolay(37);
+
+        // get bits from smoothed curve
+        bits_g = getBits(smoothed_acc_g); // z
+        bits_n = getBits(smoothed_acc_n); // y
+        bits_e = getBits(smoothed_acc_e); // x
+
+//        // bits = bits_g + bits_n + bits_e
+//        for (int i=0; i < 70; i++){
+//            bits[i] = bits_g[i];
+//        }
+//        for (int i=70; i < 140; i++){
+//            bits[i] = bits_n[i-70];
+//        }
+//        for (int i=140; i < 210; i++){
+//            bits[i] = bits_e[i-140];
+//        }
+
+        // show key
+//        for (int i=0; i < 210; i++) {
+//            tv_value8.append("bit" + i + "：   " + bits[i]);
+//            tv_value8.append("\n");
+//        }
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public int[] getBits(double[] smoothed_acc){
+        // get 75 bits from 750 samples of data with a window size of 10
+        double[] samplings = new double[70];
+        for (int i = 0; i < 70; i++){
+            samplings[i] = smoothed_acc[10 * i];
+        }
+        // quantization
+        mean = Arrays.stream(samplings).average().orElse(Double.NaN);
+        stdev = calculateSD(mean, samplings);
+        upper_ts = mean + 0.8 * stdev;
+        lower_ts = mean - 0.8 * stdev;
+        // form bits as key
+        int[] bits_= new int[70];
+        for (int i = 0; i < 70; i++){
+            if (samplings[i] > upper_ts){
+                bits_[i] = 1;
+            } else if (samplings[i] < lower_ts){
+                bits_[i] = 0;
+            } else {
+                bits_[i] = 2;   // dropped
+            }
+        }
+        return bits_;
+    }
+
+    public static double calculateSD(double mean, double[] numArray)
+    {
+        double sum = 0.0, standardDeviation = 0.0;
+        int length = numArray.length;
+        for(double num: numArray) {
+            standardDeviation += Math.pow(num - mean, 2);
+        }
+        return Math.sqrt(standardDeviation/length);
+    }
+
+    public void calculateAccMagOrientation() {
+        if(SensorManager.getRotationMatrix(rotationMatrix, null, accel, magnet)) {
+            SensorManager.getOrientation(rotationMatrix, accMagOrientation);
+        }
+    }
+
+    public static final float EPSILON = 0.000000001f;
+
+    private void getRotationVectorFromGyro
+            (float[] gyroValues, float[] deltaRotationVector, float timeFactor)
+    {
+        float[] normValues = new float[3];
+
+        // Calculate the angular speed of the sample
+        float omegaMagnitude = (float) Math.sqrt(gyroValues[0] * gyroValues[0] +
+                gyroValues[1] * gyroValues[1] + gyroValues[2] * gyroValues[2]);
+
+        // Normalize the rotation vector if it's big enough to get the axis
+        if(omegaMagnitude > EPSILON) {
+            normValues[0] = gyroValues[0] / omegaMagnitude;
+            normValues[1] = gyroValues[1] / omegaMagnitude;
+            normValues[2] = gyroValues[2] / omegaMagnitude;
+        }
+
+        // Integrate around this axis with the angular speed by the timestep
+        // in order to get a delta rotation from this sample over the timestep
+        // We will convert this axis-angle representation of the delta rotation
+        // into a quaternion before turning it into the rotation matrix.
+        float thetaOverTwo = omegaMagnitude * timeFactor;
+        float sinThetaOverTwo = (float)Math.sin(thetaOverTwo);
+        float cosThetaOverTwo = (float)Math.cos(thetaOverTwo);
+        deltaRotationVector[0] = sinThetaOverTwo * normValues[0];
+        deltaRotationVector[1] = sinThetaOverTwo * normValues[1];
+        deltaRotationVector[2] = sinThetaOverTwo * normValues[2];
+        deltaRotationVector[3] = cosThetaOverTwo;
+    }
+
+    private static final float NS2S = 1.0f / 1000000000.0f;
+    private float timestamp;
+    private boolean initState = true;
+
+    public void gyroFunction(SensorEvent event) {
+        // don't start until first accelerometer/magnetometer orientation has been acquired
+        if (accMagOrientation == null)
+            return;
+
+        // initialisation of the gyroscope based rotation matrix
+        if(initState) {
+            float[] initMatrix;
+            initMatrix = getRotationMatrixFromOrientation(accMagOrientation);
+            float[] test = new float[3];
+            SensorManager.getOrientation(initMatrix, test);
+            gyroMatrix = matrixMultiplication(gyroMatrix, initMatrix);
+            initState = false;
+        }
+
+        // copy the new gyro values into the gyro array
+        // convert the raw gyro data into a rotation vector
+        float[] deltaVector = new float[4];
+        if(timestamp != 0) {
+            final float dT = (event.timestamp - timestamp) * NS2S;
+            System.arraycopy(event.values, 0, gyro, 0, 3);
+            getRotationVectorFromGyro(gyro, deltaVector, dT / 2.0f);
+        }
+
+        // measurement done, save current time for next interval
+        timestamp = event.timestamp;
+
+        // convert rotation vector into rotation matrix
+        float[] deltaMatrix = new float[9];
+        SensorManager.getRotationMatrixFromVector(deltaMatrix, deltaVector);
+
+        // apply the new rotation interval on the gyroscope based rotation matrix
+        gyroMatrix = matrixMultiplication(gyroMatrix, deltaMatrix);
+
+        // get the gyroscope based orientation from the rotation matrix
+        SensorManager.getOrientation(gyroMatrix, gyroOrientation);
+    }
+
+    private float[] getRotationMatrixFromOrientation(float[] o) {
+        float[] xM = new float[9];
+        float[] yM = new float[9];
+        float[] zM = new float[9];
+
+        float sinX = (float)Math.sin(o[1]);
+        float cosX = (float)Math.cos(o[1]);
+        float sinY = (float)Math.sin(o[2]);
+        float cosY = (float)Math.cos(o[2]);
+        float sinZ = (float)Math.sin(o[0]);
+        float cosZ = (float)Math.cos(o[0]);
+
+        // rotation about x-axis (pitch)
+        xM[0] = 1.0f; xM[1] = 0.0f; xM[2] = 0.0f;
+        xM[3] = 0.0f; xM[4] = cosX; xM[5] = sinX;
+        xM[6] = 0.0f; xM[7] = -sinX; xM[8] = cosX;
+
+        // rotation about y-axis (roll)
+        yM[0] = cosY; yM[1] = 0.0f; yM[2] = sinY;
+        yM[3] = 0.0f; yM[4] = 1.0f; yM[5] = 0.0f;
+        yM[6] = -sinY; yM[7] = 0.0f; yM[8] = cosY;
+
+        // rotation about z-axis (azimuth)
+        zM[0] = cosZ; zM[1] = sinZ; zM[2] = 0.0f;
+        zM[3] = -sinZ; zM[4] = cosZ; zM[5] = 0.0f;
+        zM[6] = 0.0f; zM[7] = 0.0f; zM[8] = 1.0f;
+
+        // rotation order is y, x, z (roll, pitch, azimuth)
+        float[] resultMatrix;
+        resultMatrix = matrixMultiplication(xM, yM);
+        resultMatrix = matrixMultiplication(zM, resultMatrix);
+        return resultMatrix;
+    }
+
+    private float[] matrixMultiplication(float[] A, float[] B) {
+        float[] result = new float[9];
+
+        result[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
+        result[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
+        result[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
+
+        result[3] = A[3] * B[0] + A[4] * B[3] + A[5] * B[6];
+        result[4] = A[3] * B[1] + A[4] * B[4] + A[5] * B[7];
+        result[5] = A[3] * B[2] + A[4] * B[5] + A[5] * B[8];
+
+        result[6] = A[6] * B[0] + A[7] * B[3] + A[8] * B[6];
+        result[7] = A[6] * B[1] + A[7] * B[4] + A[8] * B[7];
+        result[8] = A[6] * B[2] + A[7] * B[5] + A[8] * B[8];
+
+        return result;
+    }
+
+    class calculateFusedOrientationTask extends TimerTask {
+        public void run() {
+            float oneMinusCoeff = 1.0f - FILTER_COEFFICIENT;
+
+            fusedOrientation[0] = FILTER_COEFFICIENT * gyroOrientation[0]
+                    + oneMinusCoeff * accMagOrientation[0];
+
+            fusedOrientation[1] = FILTER_COEFFICIENT * gyroOrientation[1]
+                    + oneMinusCoeff * accMagOrientation[1];
+
+            fusedOrientation[2] = FILTER_COEFFICIENT * gyroOrientation[2]
+                    + oneMinusCoeff * accMagOrientation[2];
+
+            // overwrite gyro matrix and orientation with fused orientation
+            // to comensate gyro drift
+            gyroMatrix = getRotationMatrixFromOrientation(fusedOrientation);
+            System.arraycopy(fusedOrientation, 0, gyroOrientation, 0, 3);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
 
     /*onClick function: for buttons*/
     @Override
@@ -256,27 +594,9 @@ public class server
         else if (v.getId() == R.id.server_sample_start){
 
             new Thread(new thread_timer()).start();
-            initListeners();
 
-            // wait for 1 sec until sensors are initialised
-            fuseTimer.scheduleAtFixedRate(new calculateFusedOrientationTask(),
-                    1000, TIME_CONSTANT);
+
         }
-    }
-
-    public void initListeners(){
-        /*100Hz*/
-        mSensorManager.registerListener(this,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                10000);
-
-        mSensorManager.registerListener(this,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-                10000);
-
-        mSensorManager.registerListener(this,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-                10000);
     }
 
 
@@ -473,6 +793,9 @@ public class server
             while (DateUtil.getNowMinute() != minute) {
                 continue;
             }
+            start_recording_flag = true;
+            sensor_sample_count = 0;
+
             new Thread(new sampling()).start();     // straight after the time is reached, start the sampling
 
             runOnUiThread(new Runnable() {
@@ -492,14 +815,57 @@ public class server
         @Override
         public void run() {
             //////// insert Bit generator here
+            int i = 0;
+            int j = 0;
+            int k = 1;
 
-            L_Bob_x = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-            L_Bob_y = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-            L_Bob_z = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+            for (i=0; i < 70; i++) {
+                if (bits_e[i] <= 1) {
+                    key_Bob_x[j] = bits_e[i];
+                    j++;
+                }
+                if (bits_e[i] <= 1) {
+                    L_Bob_x[j] = k;
+                    j++;
+                    k++;
+                }
+            }
 
-            key_Bob_x = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-            key_Bob_y = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-            key_Bob_z = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+            j = 0;
+            k = 1;
+            for (i=0; i < 70; i++) {
+                if (bits_n[i] <= 1) {
+                    key_Bob_y[j] = bits_n[i];
+                    j++;
+                }
+                if (bits_n[i] <= 1) {
+                    L_Bob_y[j] = k;
+                    j++;
+                    k++;
+                }
+            }
+
+            j = 0;
+            k = 1;
+            for (i=0; i < 70; i++) {
+                if (bits_g[i] <= 1) {
+                    key_Bob_z[j] = bits_g[i];
+                    j++;
+                }
+                if (bits_g[i] <= 1) {
+                    L_Bob_z[j] = k;
+                    j++;
+                    k++;
+                }
+            }
+
+//            L_Bob_x = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+//            L_Bob_y = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+//            L_Bob_z = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+//
+//            key_Bob_x = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+//            key_Bob_y = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+//            key_Bob_z = new int[]{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 
             /*now start the reconciliation
             * the above code has defined the variable bob, now define its class
