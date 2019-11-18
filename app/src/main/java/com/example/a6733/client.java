@@ -1,6 +1,8 @@
 package com.example.a6733;
 
 import com.example.a6733.functions.DateUtil;
+import com.example.a6733.functions.decryption;
+import com.example.a6733.functions.encryption;
 import com.example.a6733.functions.reconciliation_alice;
 import com.example.a6733.functions.reconciliation_function;
 
@@ -70,6 +72,8 @@ public class client
     int[] key_Alice_x;
     int[] key_Alice_y;
     int[] key_Alice_z;
+
+    String mykey;
 
     reconciliation_alice alice;
 
@@ -170,7 +174,9 @@ public class client
             client_et.setText("");
 
             if (! message.isEmpty()){
-                new Thread(new thread_udp_send(message.getBytes())).start();
+                encryption new_encryption = new encryption(mykey, message);
+                byte[] byte_message = new_encryption.encrypt();
+                new Thread(new thread_udp_send(byte_message)).start();
             }
         }
         else if (v.getId() == R.id.client_sample_start){
@@ -247,30 +253,35 @@ public class client
                                 }
                             });
 
+                            mykey = alice.key_out();
+
                         }
                         else{
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired fail !!");
+                                    client_connection_status.setText("Pair fail !!");
                                 }
                             });
 
                             break;
                         }
                     }
-                    else if (messenge_counter == 3){
-                        /*second message from bob
-                        * this message is encrypted*/
-                        continue;
-                    }
                     else{
-
-                        /*now we need to use the decryption*/
-                        continue; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! fix this part
+                        // if the programme reach here, now is time to use the decryption method
+                        decryption new_decryption = new decryption(mykey, buf);
+                        final String message = new_decryption.decrypt();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                client_tv_2.append(DateUtil.getNowTime() +"Receive: " + message + "\n");
+                            }
+                        });
                     }
-
                 }
+
+                // if break from the loop, then stop the thread
                 Thread.currentThread().interrupt();
             }
             catch (Exception e) {
@@ -286,6 +297,7 @@ public class client
     * Input: byte[] message
     * Note that everything is in byte[] only !!!*/
     class thread_udp_send implements Runnable {
+
         private byte[] message;
 
         thread_udp_send(byte[] message) {

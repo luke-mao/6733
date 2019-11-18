@@ -1,6 +1,8 @@
 package com.example.a6733;
 
 import com.example.a6733.functions.DateUtil;
+import com.example.a6733.functions.decryption;
+import com.example.a6733.functions.encryption;
 import com.example.a6733.functions.reconciliation_bob;
 
 import android.annotation.SuppressLint;
@@ -48,7 +50,7 @@ import static java.lang.Float.NaN;
 
 public class server
         extends AppCompatActivity
-        implements View.OnClickListener {
+        implements View.OnClickListener, SensorEventListener {
 
 
     /*This is the main coding part for server_service
@@ -96,9 +98,70 @@ public class server
     int[] key_Bob_y;
     int[] key_Bob_z;
 
+    String mykey;
+
     reconciliation_bob bob;     // define the class first
 
+    private SensorManager mSensorManager = null;
+    // angular speeds from gyro
+    private float[] gyro = new float[3];
+    // rotation matrix from gyro data
+    private float[] gyroMatrix = new float[9];
+    // orientation angles from gyro matrix
+    private float[] gyroOrientation = new float[3];
+    // magnetic field vector
+    private float[] magnet = new float[3];
+    // accelerometer vector
+    private float[] accel = new float[3];
+    // orientation angles from accel and magnet
+    private float[] accMagOrientation = new float[3];
+    // final orientation angles from sensor fusion
+    private float[] fusedOrientation = new float[3];
+    // accelerometer and magnetometer based rotation matrix
+    private float[] rotationMatrix = new float[9];
 
+    // accelerometer vector in global/earth frame
+    private float[] accel_gl = new float[3];
+
+    private TextView tv_value1;
+    private TextView tv_value2;
+    private TextView tv_value3;
+    private TextView tv_value4;
+    private TextView tv_value5;
+    private TextView tv_value6;
+    private TextView tv_value7;
+    private TextView tv_value8;
+
+
+    private float Zn_6 = NaN;
+    private float Zn_5 = NaN;
+    private float Zn_4 = NaN;
+    private float Zn_3 = NaN;
+    private float Zn_2 = NaN;
+    private float Zn_1 = NaN;
+    private float Zn = NaN;
+
+    private boolean request_flag = false;
+    private int sensor_sample_count = 0;
+
+    private double[] acc_g = new double[2000];
+    private double[] smoothed_acc_g = new double[2000];
+    private int[] bits = new int[200];
+
+    private double mean = 0;
+    private double stdev = 0;
+    private double upper_ts = 0;
+    private double lower_ts = 0;
+
+
+    // prev_peak time in millis
+    private long t_peak = 0;
+
+    private int steps = 0;
+
+    public static final int TIME_CONSTANT = 33;
+    public static final float FILTER_COEFFICIENT = 0.98f;
+    private Timer fuseTimer = new Timer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,7 +206,33 @@ public class server
 
         //new Thread(new thread_udp_listen()).start();
 
+        // ini gyro
+        gyroOrientation[0] = 0.0f;
+        gyroOrientation[1] = 0.0f;
+        gyroOrientation[2] = 0.0f;
+        // ini gyroMatrix with identity matrix
+        gyroMatrix[0] = 1.0f; gyroMatrix[1] = 0.0f; gyroMatrix[2] = 0.0f;
+        gyroMatrix[3] = 0.0f; gyroMatrix[4] = 1.0f; gyroMatrix[5] = 0.0f;
+        gyroMatrix[6] = 0.0f; gyroMatrix[7] = 0.0f; gyroMatrix[8] = 1.0f;
 
+
+        mSensorManager = (SensorManager) this.getSystemService(SENSOR_SERVICE);
+
+        bindViews();
+    }
+
+
+
+    private void bindViews() {
+        // TextView
+        tv_value1 = findViewById(R.id.tv_value1);
+        tv_value2 = findViewById(R.id.tv_value2);
+        tv_value3 = findViewById(R.id.tv_value3);
+        tv_value4 = findViewById(R.id.tv_value4);
+        tv_value5 = findViewById(R.id.tv_value5);
+        tv_value6 = findViewById(R.id.tv_value6);
+        tv_value7 = findViewById(R.id.tv_value7);
+        tv_value8 = findViewById(R.id.tv_value8);
     }
 
 
@@ -159,13 +248,35 @@ public class server
             server_et.setText("");
 
             if (!message.isEmpty()) {
-                new Thread(new thread_udp_send(message.getBytes())).start();
+                encryption new_encryption = new encryption(mykey, message);
+                byte[] byte_message = new_encryption.encrypt();
+                new Thread(new thread_udp_send(byte_message)).start();
             }
         }
         else if (v.getId() == R.id.server_sample_start){
 
             new Thread(new thread_timer()).start();
+            initListeners();
+
+            // wait for 1 sec until sensors are initialised
+            fuseTimer.scheduleAtFixedRate(new calculateFusedOrientationTask(),
+                    1000, TIME_CONSTANT);
         }
+    }
+
+    public void initListeners(){
+        /*100Hz*/
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                10000);
+
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                10000);
+
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+                10000);
     }
 
 
@@ -244,37 +355,45 @@ public class server
                             byte[] second_message = bob.second_part_message();
                             new Thread(new thread_udp_send(second_message)).start();
 
+                            mykey = bob.key_out();
+
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     server_tv_2.append("\n"+ DateUtil.getNowTime() +"\nPair Success !!!");
                                 }
                             });
+
                         }
                         else{
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     server_tv_2.append("\n"+ DateUtil.getNowTime() +"\nPair fail !!!");
+                                    server_connection_status.setText("Pair fail");
                                 }
                             });
-
+                            break;
                         }
+                    }
+                    else{
 
-                    } else if (messenge_counter >= 3) {
-
-                        // so now you should use the encryption now
-                        final String message = new String(buf);
-
+                        // if the programme reach here, now is time to use the decryption method
+                        decryption new_decryption = new decryption(mykey, buf);
+                        final String message = new_decryption.decrypt();
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                server_tv_1.append(DateUtil.getNowTime() + " receive...\n" + message + "\n");
+                                server_tv_2.append(DateUtil.getNowTime() +"Receive: " + message + "\n");
                             }
                         });
-                    }
 
+                    }
                 }
+
+                // if break from the loop, then stop this thread
+                Thread.currentThread().interrupt();
+
             } catch (Exception e) {
                 Log.d(TAG, "Wrong client receiving thread");
                 e.printStackTrace();
@@ -285,7 +404,9 @@ public class server
 
     /*thread_udp_send
      * Task: send udp packet to the destinated server ip and port
-     * Input: String message*/
+     * Input: String message
+     * note: here we do not need to implement encryption
+     * the thread only accepts byte[]*/
     class thread_udp_send implements Runnable {
 
         private byte[] message;

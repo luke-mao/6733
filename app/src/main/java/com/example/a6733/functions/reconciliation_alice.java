@@ -63,4 +63,26 @@ public class reconciliation_alice{
         return Arrays.equals(alice_mac, second_message);
     }
 
+    public String key_out(){
+
+        // so now we have the int key, check the length,
+        // if less than 16 digits, make it to 16 digits, if more, then extract the first 16 digits
+        String potential_key = reconciliation_function.int_array_to_string_no_comma(key);
+        String final_key = "";
+
+        if (potential_key.length() > 16){
+            final_key = potential_key.substring(0,16);
+        }
+        else if (potential_key.length() < 16){
+
+            // copy the key again and again
+            while (potential_key.length() < 16){
+                potential_key += potential_key;
+            }
+            final_key = potential_key.substring(0,16);
+        }
+
+        return final_key;
+    }
+
 }

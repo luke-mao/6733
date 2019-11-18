@@ -9,6 +9,7 @@ public class reconciliation_bob {
     String L_Alice;
     int[] L_x, L_y, L_z;
     int[] key_x, key_y, key_z;
+    int[] key;
 
     /* this is the initialization of the class */
     public reconciliation_bob(byte[] L_Alice,
@@ -68,7 +69,7 @@ public class reconciliation_bob {
 
         /*MACencrypt(int[] key, int[] window)*/
         // first combine three keys and three intersection windows
-        int[] key = reconciliation_function.intersection_keys_three_directions(
+        key = reconciliation_function.intersection_keys_three_directions(
                 key_x, L_x, L_intersection_x,
                 key_y, L_y, L_intersection_y,
                 key_z, L_z, L_intersection_z
@@ -80,4 +81,27 @@ public class reconciliation_bob {
 
         return reconciliation_function.MACencrypt(key,window);
     }
+
+    public String key_out(){
+
+        // so now we have the int key, check the length,
+        // if less than 16 digits, make it to 16 digits, if more, then extract the first 16 digits
+        String potential_key = reconciliation_function.int_array_to_string_no_comma(key);
+        String final_key = "";
+
+        if (potential_key.length() > 16){
+            final_key = potential_key.substring(0,16);
+        }
+        else if (potential_key.length() < 16){
+
+            // copy the key again and again
+            while (potential_key.length() < 16){
+                potential_key += potential_key;
+            }
+            final_key = potential_key.substring(0,16);
+        }
+
+        return final_key;
+    }
+
 }
