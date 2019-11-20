@@ -4,6 +4,8 @@ import com.example.a6733.functions.DateUtil;
 import com.example.a6733.functions.decryption;
 import com.example.a6733.functions.encryption;
 import com.example.a6733.functions.reconciliation_bob;
+import com.example.a6733.functions.extraction;
+import com.example.a6733.functions.reconciliation_function;
 
 import android.annotation.SuppressLint;
 import android.net.wifi.WifiInfo;
@@ -97,6 +99,14 @@ public class server
     public int[] key_Bob_x = new int[70];
     public int[] key_Bob_y = new int[70];
     public int[] key_Bob_z = new int[70];
+
+    public int[] f_L_Bob_x;
+    public int[] f_L_Bob_y;
+    public int[] f_L_Bob_z;
+
+    public int[] f_key_Bob_x;
+    public int[] f_key_Bob_y;
+    public int[] f_key_Bob_z;
 
     String mykey;
 
@@ -260,6 +270,51 @@ public class server
                         generateKey();
                         extractBits();
                         Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
+
+
+                        extraction extract_x = new extraction(L_Bob_x, key_Bob_x);
+                        extraction extract_y = new extraction(L_Bob_y, key_Bob_y);
+                        extraction extract_z = new extraction(L_Bob_z, key_Bob_z);
+
+                        f_L_Bob_x = new int[extract_x.find_length()];
+                        f_key_Bob_x = new int[extract_x.find_length()];
+
+                        f_L_Bob_x = extract_x.treat_index();
+                        f_key_Bob_x = extract_x.treat_key();
+
+                        f_L_Bob_y = new int[extract_y.find_length()];
+                        f_key_Bob_y = new int[extract_y.find_length()];
+
+                        f_L_Bob_y = extract_y.treat_index();
+                        f_key_Bob_y = extract_y.treat_key();
+
+                        f_L_Bob_z = new int[extract_z.find_length()];
+                        f_key_Bob_z = new int[extract_z.find_length()];
+
+                        f_L_Bob_z = extract_z.treat_index();
+                        f_key_Bob_z = extract_z.treat_key();
+
+                        Log.d(TAG, "x direction");
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_L_Bob_x));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Bob_x));
+
+                        Log.d(TAG, "y direction");
+                        Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Bob_y));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Bob_y));
+
+                        Log.d(TAG, "z direction");
+                        Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Bob_z));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Bob_z));
+
+                        server_tv_3.append(reconciliation_function.int_array_to_string(f_L_Bob_x)+"\n");
+                        server_tv_3.append(reconciliation_function.int_array_to_string(f_key_Bob_x)+"\n");
+
+                        server_tv_3.append(reconciliation_function.int_array_to_string(f_L_Bob_y)+"\n");
+                        server_tv_3.append(reconciliation_function.int_array_to_string(f_key_Bob_y)+"\n");
+
+                        server_tv_3.append(reconciliation_function.int_array_to_string(f_L_Bob_z)+"\n");
+                        server_tv_3.append(reconciliation_function.int_array_to_string(f_key_Bob_z)+"\n");
+
                         server_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
@@ -359,9 +414,10 @@ public class server
             if (bits_e[i] <= 1) {
                 key_Bob_x[j] = bits_e[i];
                 L_Bob_x[j] = k;
-                k++;
+
                 j++;
             }
+            k++;
         }
 
         j = 0;
@@ -370,9 +426,10 @@ public class server
             if (bits_n[i] <= 1) {
                 key_Bob_y[j] = bits_n[i];
                 L_Bob_y[j] = k;
-                k++;
+
                 j++;
             }
+            k++;
         }
 
         j = 0;
@@ -381,9 +438,10 @@ public class server
             if (bits_g[i] <= 1) {
                 key_Bob_z[j] = bits_g[i];
                 L_Bob_z[j] = k;
-                k++;
+
                 j++;
             }
+            k++;
         }
     }
 
@@ -646,34 +704,36 @@ public class server
         public void run(){
             final int addition; //additional time added
 
-            int minute = DateUtil.getNowMinute();
-
-            if (DateUtil.getNowSecond() > 30) {
-                minute = minute + 2;
-                addition = 2;
-            } else {
-                minute += 1;
-                addition = 1;
-            }
-
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     server_tv_1.append(
-                            DateUtil.getNowTime() + " Prepare for sampling less than " + addition + " minutes...\n"
+                            DateUtil.getNowTime() + " Prepare for sampling less than 1 minutes...\n"
                     );
                 }
             });
 
+            int minute = DateUtil.getNowMinute();
 
-            while (DateUtil.getNowMinute() != minute) {
-                continue;
+            if (DateUtil.getNowSecond() < 30){
+
+                minute++;
+
+
+                while (DateUtil.getNowMinute() != minute){
+                    continue;
+                }
+            }
+            else{
+                while (DateUtil.getNowSecond() != 30){
+                    continue;
+                }
             }
 
 
             //server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
             //Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
-            Log.d("Server", "sample start");
+            Log.d(TAG, "sample start");
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -729,10 +789,8 @@ public class server
                         }
                     });
 
-
                     inet_client_address = packet.getAddress();
                     client_port = packet.getPort();
-
 
                     if (messenge_counter == 1) {
                         runOnUiThread(new Runnable() {
@@ -742,7 +800,7 @@ public class server
                             }
                         });
 
-                        bob = new reconciliation_bob(buf, L_Bob_x, key_Bob_x);
+                        bob = new reconciliation_bob(buf, f_L_Bob_x, f_key_Bob_x);
 
                         if (bob.decision()){
 

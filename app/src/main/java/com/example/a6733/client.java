@@ -5,6 +5,7 @@ import com.example.a6733.functions.decryption;
 import com.example.a6733.functions.encryption;
 import com.example.a6733.functions.reconciliation_alice;
 import com.example.a6733.functions.reconciliation_function;
+import com.example.a6733.functions.extraction;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -96,6 +97,15 @@ public class client
     public int[] key_Alice_x = new int[70];
     public int[] key_Alice_y = new int[70];
     public int[] key_Alice_z = new int[70];
+
+
+    public int[] f_L_Alice_x;
+    public int[] f_L_Alice_y;
+    public int[] f_L_Alice_z;
+
+    public int[] f_key_Alice_x;
+    public int[] f_key_Alice_y;
+    public int[] f_key_Alice_z;
 
     reconciliation_alice alice;
 
@@ -256,17 +266,51 @@ public class client
 
                         Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
 
+                        /*do something, take the valid part from L_Alice_x to determine the key
+                        * the function is write in the separate file*/
 
-                        Log.d(TAG,reconciliation_function.int_array_to_string(L_Alice_x));
-                        Log.d(TAG, reconciliation_function.int_array_to_string(L_Alice_y));
-                        Log.d(TAG, reconciliation_function.int_array_to_string(L_Alice_z));
+                        extraction extract_x = new extraction(L_Alice_x, key_Alice_x);
+                        extraction extract_y = new extraction(L_Alice_y, key_Alice_y);
+                        extraction extract_z = new extraction(L_Alice_z, key_Alice_z);
 
-                        Log.d(TAG, reconciliation_function.int_array_to_string(key_Alice_x));
-                        Log.d(TAG, reconciliation_function.int_array_to_string(key_Alice_y));
-                        Log.d(TAG, reconciliation_function.int_array_to_string(key_Alice_z));
+                        f_L_Alice_x = new int[extract_x.find_length()];
+                        f_key_Alice_x = new int[extract_x.find_length()];
 
+                        f_L_Alice_x = extract_x.treat_index();
+                        f_key_Alice_x = extract_x.treat_key();
 
+                        f_L_Alice_y = new int[extract_y.find_length()];
+                        f_key_Alice_y = new int[extract_y.find_length()];
 
+                        f_L_Alice_y = extract_y.treat_index();
+                        f_key_Alice_y = extract_y.treat_key();
+
+                        f_L_Alice_z = new int[extract_z.find_length()];
+                        f_key_Alice_z = new int[extract_z.find_length()];
+
+                        f_L_Alice_z = extract_z.treat_index();
+                        f_key_Alice_z = extract_z.treat_key();
+
+                        Log.d(TAG, "x direction");
+                        Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_x));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_x));
+
+                        Log.d(TAG, "y direction");
+                        Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_y));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_y));
+
+                        Log.d(TAG, "z direction");
+                        Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_z));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_z));
+
+                        client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_x)+"\n");
+                        client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_x)+"\n");
+
+                        client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_y)+"\n");
+                        client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_y)+"\n");
+
+                        client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_z)+"\n");
+                        client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_z)+"\n");
 
                         client_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
 
@@ -448,9 +492,10 @@ public class client
             if (bits_e[i] <= 1) {
                 key_Alice_x[j] = bits_e[i];
                 L_Alice_x[j] = k;
-                k++;
+
                 j++;
             }
+            k++;
         }
 
         j = 0;
@@ -459,9 +504,10 @@ public class client
             if (bits_n[i] <= 1) {
                 key_Alice_y[j] = bits_n[i];
                 L_Alice_y[j] = k;
-                k++;
+
                 j++;
             }
+            k++;
         }
 
         j = 0;
@@ -470,9 +516,10 @@ public class client
             if (bits_g[i] <= 1) {
                 key_Alice_z[j] = bits_g[i];
                 L_Alice_z[j] = k;
-                k++;
+
                 j++;
             }
+            k++;
         }
     }
 
@@ -655,7 +702,7 @@ public class client
 
                 // prepare for the Alice message
                 String alice_message = reconciliation_function.final_acc_string(
-                        reconciliation_function.int_array_to_string(L_Alice_x)
+                        reconciliation_function.int_array_to_string(f_L_Alice_x)
                 );
 
 
@@ -696,28 +743,30 @@ public class client
         public void run(){
             final int addition; //additional time added
 
-            int minute = DateUtil.getNowMinute();
-
-            if (DateUtil.getNowSecond() > 30) {
-                minute = minute + 2;
-                addition = 2;
-            } else {
-                minute += 1;
-                addition = 1;
-            }
-
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     client_tv_1.append(
-                            DateUtil.getNowTime() + " Prepare for sampling less than " + addition + " minutes...\n"
+                            DateUtil.getNowTime() + " Prepare for sampling less than 1 minutes...\n"
                     );
                 }
             });
 
+            int minute = DateUtil.getNowMinute();
 
-            while (DateUtil.getNowMinute() != minute) {
-                continue;
+            if (DateUtil.getNowSecond() < 30){
+
+                minute++;
+
+
+                while (DateUtil.getNowMinute() != minute){
+                    continue;
+                }
+            }
+            else{
+                while (DateUtil.getNowSecond() != 30){
+                    continue;
+                }
             }
 
 
@@ -792,7 +841,7 @@ public class client
                         /*now alice can run the reconciliation
                          * simply run it here*/
                         alice = new reconciliation_alice(
-                                first_message, second_message, L_Alice_x, key_Alice_x
+                                first_message, second_message, f_L_Alice_x, f_key_Alice_x
                         );
 
                         if (alice.decision()){

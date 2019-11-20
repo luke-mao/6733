@@ -119,7 +119,7 @@ public class reconciliation_function {
      * The cut off is 80%. Less than 80% same, then cancel the transction*/
     public static boolean bob_similarity_check(int[] mywindowX, int[] intersectionX){
 
-        double cutoff = 0.8;
+        double cutoff = 0.1;
 
         double simiX = (double) intersectionX.length / (double) mywindowX.length;
 
@@ -143,7 +143,6 @@ public class reconciliation_function {
             Mac mac = Mac.getInstance("HmacMD5");
             mac.init(key);
             message = mac.doFinal(data.getBytes());
-
         }
         catch(Exception e){
             e.printStackTrace();
