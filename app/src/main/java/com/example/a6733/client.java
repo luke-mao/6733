@@ -255,6 +255,19 @@ public class client
                         extractBits();
 
                         Toast.makeText(this, "Finish sampling", Toast.LENGTH_SHORT).show();
+
+
+                        Log.d(TAG,reconciliation_function.int_array_to_string(L_Alice_x));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(L_Alice_y));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(L_Alice_z));
+
+                        Log.d(TAG, reconciliation_function.int_array_to_string(key_Alice_x));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(key_Alice_y));
+                        Log.d(TAG, reconciliation_function.int_array_to_string(key_Alice_z));
+
+
+
+
                         client_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
 
                     } else if (sensor_sample_count < 750) {
@@ -641,10 +654,8 @@ public class client
 
 
                 // prepare for the Alice message
-                String alice_message = reconciliation_function.combine_three_acc_strings(
-                        reconciliation_function.int_array_to_string(L_Alice_x),
-                        reconciliation_function.int_array_to_string(L_Alice_y),
-                        reconciliation_function.int_array_to_string(L_Alice_z)
+                String alice_message = reconciliation_function.final_acc_string(
+                        reconciliation_function.int_array_to_string(L_Alice_x)
                 );
 
 
@@ -712,7 +723,7 @@ public class client
 
             //server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
             //Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
-            Log.d("Server", "sample start");
+            Log.d("Client", "sample start");
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -781,9 +792,7 @@ public class client
                         /*now alice can run the reconciliation
                          * simply run it here*/
                         alice = new reconciliation_alice(
-                                first_message, second_message,
-                                L_Alice_x, L_Alice_y, L_Alice_z,
-                                key_Alice_x, key_Alice_y, key_Alice_z
+                                first_message, second_message, L_Alice_x, key_Alice_x
                         );
 
                         if (alice.decision()){
@@ -857,6 +866,10 @@ public class client
                 );
 
                 socket.send(packet);
+
+                String thing = new String(message);
+                Log.d(TAG, thing);
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {

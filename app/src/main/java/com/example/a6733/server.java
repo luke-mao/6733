@@ -742,11 +742,7 @@ public class server
                             }
                         });
 
-                        bob = new reconciliation_bob(
-                                buf,  // this is the alice message in byte, but the programme will convert into a string
-                                L_Bob_x, L_Bob_y, L_Bob_z,
-                                key_Bob_x, key_Bob_y, key_Bob_z
-                        );
+                        bob = new reconciliation_bob(buf, L_Bob_x, key_Bob_x);
 
                         if (bob.decision()){
 

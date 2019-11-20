@@ -4,49 +4,37 @@ import com.example.a6733.functions.reconciliation_function;
 
 public class reconciliation_bob {
 
-    /* SERVER is the bob, receive the message and then reply*/
+    /*change on the reconciliation bob
+    * So that use one direction key only*/
 
     String L_Alice;
-    int[] L_x, L_y, L_z;
-    int[] key_x, key_y, key_z;
+    int[] L_x;
+    int[] key_x;
+
     int[] key;
 
     /* this is the initialization of the class */
-    public reconciliation_bob(byte[] L_Alice,
-                              int[] L_x, int[] L_y, int[] L_z,
-                              int[] key_x,int[] key_y, int[] key_z){
+    public reconciliation_bob(byte[] L_Alice, int[] L_x, int[] key_x){
         this.L_Alice = new String(L_Alice);
         this.L_x = L_x;
-        this.L_y = L_y;
-        this.L_z = L_z;
         this.key_x = key_x;
-        this.key_y = key_y;
-        this.key_z = key_z;
     }
 
 
     /*bob decision returns a boolean
      * if true, then proceed*/
-    int[] L_intersection_x, L_intersection_y, L_intersection_z;
+
+    int[] L_intersection_x;
 
     public boolean decision(){
 
-        String[] str_Alice_array = reconciliation_function.split_three_acc_window_strings(L_Alice);
+        String str_Alice = reconciliation_function.split_acc_strings(L_Alice);
 
-        int[] L_Alice_x = reconciliation_function.string_to_int_array(str_Alice_array[0]);
-        int[] L_Alice_y = reconciliation_function.string_to_int_array(str_Alice_array[1]);
-        int[] L_Alice_z = reconciliation_function.string_to_int_array(str_Alice_array[2]);
+        int[] L_Alice_x = reconciliation_function.string_to_int_array(str_Alice);
 
-        L_intersection_x = reconciliation_function.intersection_two_int_arrays(
-                L_x, L_Alice_x);
-        L_intersection_y = reconciliation_function.intersection_two_int_arrays(
-                L_x, L_Alice_y);
-        L_intersection_z = reconciliation_function.intersection_two_int_arrays(
-                L_x, L_Alice_z);
+        L_intersection_x = reconciliation_function.intersection_two_int_arrays(L_x, L_Alice_x);
 
-        return reconciliation_function.bob_similarity_check(L_x, L_intersection_x,
-                L_y, L_intersection_y,
-                L_z, L_intersection_z);
+        return reconciliation_function.bob_similarity_check(L_x, L_intersection_x);
     }
 
 
@@ -55,10 +43,8 @@ public class reconciliation_bob {
     public byte[] first_part_message(){
 
         String x = reconciliation_function.int_array_to_string(L_intersection_x);
-        String y = reconciliation_function.int_array_to_string(L_intersection_y);
-        String z = reconciliation_function.int_array_to_string(L_intersection_z);
 
-        String total = reconciliation_function.combine_three_acc_strings(x,y,z);
+        String total = reconciliation_function.final_acc_string(x);
         return total.getBytes();
     }
 
@@ -69,15 +55,9 @@ public class reconciliation_bob {
 
         /*MACencrypt(int[] key, int[] window)*/
         // first combine three keys and three intersection windows
-        key = reconciliation_function.intersection_keys_three_directions(
-                key_x, L_x, L_intersection_x,
-                key_y, L_y, L_intersection_y,
-                key_z, L_z, L_intersection_z
-        );
+        key = reconciliation_function.intersection_keys_one_direction(key_x, L_x, L_intersection_x);
 
-        int[] window = reconciliation_function.merge_three_int_array(
-                L_intersection_x, L_intersection_y, L_intersection_z
-        );
+        int[] window = L_intersection_x;
 
         return reconciliation_function.MACencrypt(key,window);
     }
@@ -102,6 +82,6 @@ public class reconciliation_bob {
         }
 
         return final_key;
-    }
 
+    }
 }

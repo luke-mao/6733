@@ -46,45 +46,33 @@ public class reconciliation_function {
      * essentially the reverse of int_array_to_string*/
     public static int[] string_to_int_array(String input) {
 
-        Log.d("ReconciliationF", input);
         String[] string_array = input.split(",");
-
-
         //convert each element into integer
         int[] int_array = new int[string_array.length];
 
-        // now choose to omit the last number
-        for (int i = 0; i < int_array.length -1; i++) {
-
-            Log.d("ReconciliationF:::", string_array[i]);
-
-            // string read wrong at the last number, consider omit the last number? or use regular expression?
+        for (int i = 0; i < int_array.length; i++) {
 
             int_array[i] = Integer.parseInt(string_array[i]);
         }
-        int_array[int_array.length-1] = 0;
-
-
-
         return int_array;
     }
 
 
     /*combine acceleration string of three direction together
      * use separator symbol "|"*/
-    public static String combine_three_acc_strings(String accX, String accY, String accZ) {
+    public static String final_acc_string(String accX) {
 
-        String result = accX + "@" + accY + "@" + accZ + "@";
+        String result = accX + "@";
         return result;
     }
 
 
     /*a reverse function of the combine_three_acc_strings
      * return a string array: [string accX, string accY, string accZ]*/
-    public static String[] split_three_acc_window_strings(String input) {
+    public static String split_acc_strings(String input) {
 
-        String[] result = input.split("@", 4);
-        return result;
+        String[] result = input.split("@", 2);
+        return result[0];
     }
 
 
@@ -129,17 +117,15 @@ public class reconciliation_function {
 
     /*similarity check, bob function
      * The cut off is 80%. Less than 80% same, then cancel the transction*/
-    public static boolean bob_similarity_check(int[] mywindowX, int[] intersectionX,
-                                               int[] mywindowY, int[] intersectionY,
-                                               int[] mywindowZ, int[] intersectionZ){
+    public static boolean bob_similarity_check(int[] mywindowX, int[] intersectionX){
 
         double cutoff = 0.8;
 
         double simiX = (double) intersectionX.length / (double) mywindowX.length;
-        double simiY = (double) intersectionY.length / (double) mywindowY.length;
-        double simiZ = (double) intersectionZ.length / (double) mywindowZ.length;
 
-        return (simiX+simiY+simiZ) > cutoff;
+        Log.d("Similarity", String.valueOf(simiX));
+
+        return simiX > cutoff;
     }
 
 
