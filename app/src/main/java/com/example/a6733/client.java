@@ -296,12 +296,12 @@ public class client
                         //////////////////////////////////////////////////////////////////////////////
                         Arrays.fill(char_array, 'G'); // (int)'G' = 71
                         int i = 0;
-                        for (; i<f_L_Alice_x.length; i++){
+                        for (; i < f_L_Alice_x.length; i++){
                             char_array[i] = (char) f_L_Alice_x[i];
                         }
                         char_array[i] = (char) 'H'; // (int)'H' = 72
                         i++;
-                        for (int j=0; j<f_L_Alice_y.length; j++){
+                        for (int j=0; j < f_L_Alice_y.length; j++){
                             char_array[j+i] = (char) f_L_Alice_y[j];
                             i++;
                         }
@@ -325,6 +325,9 @@ public class client
                         Log.d(TAG, "z direction");
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_z));
                         Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_z));
+
+                        Log.d(TAG, Arrays.toString(char_array));
+
 
                         client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_x)+"\n");
                         client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_x)+"\n");

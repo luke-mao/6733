@@ -58,7 +58,7 @@ public class reconciliation_bob {
 
         return reconciliation_function.bob_similarity_check_three_direction(
                 L_x, L_intersection_x,
-                L_z, L_intersection_y,
+                L_y, L_intersection_y,
                 L_z, L_intersection_z
         );
     }

@@ -144,8 +144,17 @@ public class reconciliation_function {
         Log.d("SimilarityY", String.valueOf(simiY));
         Log.d("SimilarityZ", String.valueOf(simiZ));
 
+        String TAG = "check";
+        Log.d(TAG, int_array_to_string(mywindowX));
+        Log.d(TAG, int_array_to_string(intersectionX));
 
-        return ((simiX + simiY + simiZ)/3) > cutoff;
+        Log.d(TAG, int_array_to_string(mywindowY));
+        Log.d(TAG, int_array_to_string(intersectionY));
+
+        Log.d(TAG, int_array_to_string(mywindowZ));
+        Log.d(TAG, int_array_to_string(intersectionZ));
+
+        return (simiX + simiY + simiZ)/3 > cutoff;
     }
 
 
@@ -181,33 +190,28 @@ public class reconciliation_function {
          * Take element from guest, and compare with each element in main
          * stop until the main element > guest element*/
 
+//        Log.d("NOW", int_array_to_string(main));
+//        Log.d("NOW", int_array_to_string(guest));
+
+
         if (guest.length < main.length){
 
             int[] intersection = new int[guest.length];
+            int index = 0;
 
-            int main_index = 0;
-            int intersection_index = 0;
+            for (int i = 0; i < guest.length; i++){
 
-            for (int guest_i = 0; guest_i < guest.length; guest_i++){
+                for (int j = 0; j < main.length; j++){
 
-                for (int main_i = main_index; main_i < main.length; main_i++){
-
-                    if (guest[guest_i] == main[main_i]){
-                        intersection[intersection_index] = guest[guest_i];
-
-                        intersection_index++;
-                        main_index = main_i + 1;
-                        break;
-                    }
-
-                    if (guest[guest_i] < main[main_i]){
-                        break;
+                    if (guest[i]==main[j]){
+                        intersection[index] = guest[i];
+                        index++;
                     }
                 }
             }
 
             // now the result int array has result_index numbers
-            int[] result = new int[intersection_index];
+            int[] result = new int[index];
             for (int i = 0; i < result.length; i++){
                 result[i] = intersection[i];
             }
@@ -219,30 +223,21 @@ public class reconciliation_function {
             // now the guest int array has more elements than the main int array
             // find the intersection
             int[] intersection = new int[main.length];
+            int index = 0;
 
-            int guest_index = 0;
-            int intersection_index = 0;
+            for (int i = 0; i < main.length; i++) {
 
-            for (int main_i = 0; main_i < main.length; main_i++) {
+                for (int j = 0; j < guest.length; j++) {
 
-                for (int guest_i = guest_index; guest_i < guest.length; guest_i++) {
-
-                    if (guest[guest_i] == main[main_i]) {
-                        intersection[intersection_index] = guest[guest_i];
-
-                        intersection_index++;
-                        guest_index = main_i + 1;
-                        break;
-                    }
-
-                    if (main[main_i] < guest[guest_i]) {
-                        break;
+                    if (main[i] == guest[j]) {
+                        intersection[index] = main[i];
+                        index++;
                     }
                 }
             }
 
             // now the result int array has result_index numbers
-            int[] result = new int[intersection_index];
+            int[] result = new int[index];
             for (int i = 0; i < result.length; i++) {
                 result[i] = intersection[i];
             }

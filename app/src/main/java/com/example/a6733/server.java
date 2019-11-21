@@ -765,6 +765,12 @@ public class server
                             j++;
                             i++;
                         }
+
+                        Log.d(TAG, Arrays.toString(L_ALice_x));
+                        Log.d(TAG, Arrays.toString(L_ALice_y));
+                        Log.d(TAG, Arrays.toString(L_ALice_z));
+
+
                         ///////////////////////////////////////////////////////////////////////////////
                         // start the reconciliation of the server
                         bob = new reconciliation_bob(

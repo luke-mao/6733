@@ -13,20 +13,13 @@ public class extraction {
     }
 
     public int find_length(){
-        int previous, now;
-        int index;
-        previous = raw_index[0];
-        for (index = 1; index < raw_index.length; index++){
-            now = raw_index[index];
-            if (previous > now){
+
+        for (int i = 0; i < raw_index.length; i++){
+            if (raw_index[i] == 0){
+                length = i;
                 break;
             }
-            else{
-                previous = now;
-            }
         }
-        length = index;
-
         return length;
     }
 
