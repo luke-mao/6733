@@ -140,7 +140,10 @@ public class reconciliation_function {
         double simiY = (double) intersectionY.length / (double) mywindowY.length;
         double simiZ = (double) intersectionZ.length / (double) mywindowZ.length;
 
-        Log.d("Similarity", String.valueOf(simiX));
+        Log.d("SimilarityX", String.valueOf(simiX));
+        Log.d("SimilarityY", String.valueOf(simiY));
+        Log.d("SimilarityZ", String.valueOf(simiZ));
+
 
         return ((simiX + simiY + simiZ)/3) > cutoff;
     }

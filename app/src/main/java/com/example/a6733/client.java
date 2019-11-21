@@ -116,8 +116,6 @@ public class client
     String mykey;
 
     // Temporary variables to store sensor data
-
-
     private SensorManager mSensorManager = null;
     // angular speeds from gyro
     private float[] gyro = new float[3];
@@ -166,10 +164,6 @@ public class client
     private double upper_ts = 0;
     private double lower_ts = 0;
 
-    int[] L_intersection_x;
-    int[] L_intersection_y;
-    int[] L_intersection_z;
-
     // prev_peak time in millis
     private long t_peak = 0;
 
@@ -212,7 +206,7 @@ public class client
 
 
         client_input_server_ip = findViewById(R.id.client_input_server_ip);
-        client_input_server_ip.setText("10.0.0.41");
+        client_input_server_ip.setText("172.20.10.2");
 
         client_input_server_port = findViewById(R.id.client_input_server_port);
         client_input_server_port.setText("8080");
@@ -366,15 +360,6 @@ public class client
                 break;
         }
 
-//        tv_value1.setText("azimuth：" +
-//                Math.round(Math.toDegrees(fusedOrientation[0]) * 10f) / 10f + "\t\t||\t" +
-//                Math.round(Math.toDegrees(accMagOrientation[0]) * 10f) / 10f);
-//        tv_value2.setText("pitch：     " +
-//                Math.round(Math.toDegrees(fusedOrientation[1]) * 10f) / 10f + "\t\t||\t" +
-//                Math.round(Math.toDegrees(accMagOrientation[1]) * 10f) / 10f);
-//        tv_value3.setText("roll：        " +
-//                (Math.round(Math.toDegrees(fusedOrientation[2]) * 10f) / 10f) + "\t\t||\t" +
-//                Math.round(Math.toDegrees(accMagOrientation[2]) * 10f) / 10f);
 
         // After find fusedOrientation[3], acc_gl can be estimated:
         float[] rot = getRotationMatrixFromOrientation(fusedOrientation);
@@ -383,28 +368,12 @@ public class client
         float accel_gl_y_raw = accel_gl[1] = accel[0] * rot[3] + accel[1] * rot[4] + accel[2] * rot[5];
         float accel_gl_z_raw = accel[0] * rot[6] + accel[1] * rot[7] + accel[2] * rot[8];
 
-        // Then apply low pass filter to accel on z-axis:
-        // A low-pass filter passes low-frequency signals/values and attenuates
-        // (reduces the amplitude of) signals/values with frequencies higher than
-        // the cutoff frequency.
 
-        // To detect heel-strike, we ﬁrst apply a low-pass ﬁlter on acceleration along the
-        // gravity direction to reduce noise.
-        /* The cutoff frequency is chosen as 3Hz
-           lpf_scaler = tau / (tau + t_PWM)
-           FOR:
-                tau = 1 / (2 * pi * cut_off_freq) = 0.05305164769
-                t_PWM = 1 / freq_PWM = 0.01 (100 HZ)
-           THUS:
-                lpf_scaler = 0.8414f */
         // acceleration in earth/global frame after applying LPF:
         accel_gl[0] = 0.8414f * accel_gl[0] +  (1 - 0.8414f) * accel_gl_x_raw;
         accel_gl[1] = 0.8414f * accel_gl[1] +  (1 - 0.8414f) * accel_gl_y_raw;
         accel_gl[2] = 0.8414f * accel_gl[2] +  (1 - 0.8414f) * accel_gl_z_raw;
 
-//        tv_value4.setText("accel_x：   " + Math.round(accel_gl[0] * 10f) / 10f);
-//        tv_value5.setText("accel_y：   " + Math.round(accel_gl[1] * 10f) / 10f);
-//        tv_value6.setText("accel_z：   " + Math.round(accel_gl[2] * 10f) / 10f);
 
         /*
         The peak of acceleration along the gravity direction indicates a heel-strike
@@ -426,11 +395,8 @@ public class client
                 steps++;
             }
         }
-//        else {
-//            tv_value7.setText("Steps: " + steps);
-//        }
-
     }
+
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void generateKey(){
@@ -450,23 +416,6 @@ public class client
         bits_g = getBits(smoothed_acc_g); // z
         bits_n = getBits(smoothed_acc_n); // y
         bits_e = getBits(smoothed_acc_e); // x
-
-//        // bits = bits_g + bits_n + bits_e
-//        for (int i=0; i < 70; i++){
-//            bits[i] = bits_g[i];
-//        }
-//        for (int i=70; i < 140; i++){
-//            bits[i] = bits_n[i-70];
-//        }
-//        for (int i=140; i < 210; i++){
-//            bits[i] = bits_e[i-140];
-//        }
-
-        // show key
-//        for (int i=0; i < 210; i++) {
-//            tv_value8.append("bit" + i + "：   " + bits[i]);
-//            tv_value8.append("\n");
-//        }
 
     }
 
@@ -705,7 +654,6 @@ public class client
     /*onClick function: for buttons*/
     @Override
     public void onClick(View v){
-
         if (v.getId() == R.id.client_button_connect){
 
             /*click the connect button, several tasks
@@ -728,18 +676,11 @@ public class client
                 socket = new DatagramSocket(client_port);
                 socket.setReuseAddress(true);
 
+                // alice send the first message, the char_array is prepared when the sensor has recorded enough data
+                new Thread(new thread_udp_send_char(char_array)).start();
 
-                // prepare for the Alice message
-                /*String alice_message = reconciliation_function.final_acc_string(
-                        reconciliation_function.int_array_to_string(f_L_Alice_z)
-                );
-*/
-
-                new Thread(new thread_udp_send(char_array)).start();
-
-                // start the sending thread, send message "connect"
+                // start listening
                 new Thread(new thread_udp_listen()).start();
-
             }
             catch (Exception e){
                 Log.d(TAG, "Exception in socket connection");
@@ -748,17 +689,14 @@ public class client
         }
         else if(v.getId() == R.id.client_send) {
 
-            int rrrr = 9;
-//            //*//*Send the message using the thread
-//             * Clean the input box*//*
-//            String message = client_et.getText().toString();
-//            client_et.setText("");
-//
-//            if (!message.isEmpty()) {
-//                encryption new_encryption = new encryption(mykey, message);
-//                byte[] byte_message = new_encryption.encrypt();
-//                new Thread(new thread_udp_send(byte_message)).start();
-//            }
+            String message = client_et.getText().toString();
+            client_et.setText("");
+
+            if (!message.isEmpty()) {
+                encryption new_encryption = new encryption(mykey, message);
+                byte[] byte_message = new_encryption.encrypt();
+                new Thread(new thread_udp_send(byte_message)).start();
+            }
         }
         else if (v.getId() == R.id.client_sample_start){
 
@@ -777,28 +715,15 @@ public class client
                 @Override
                 public void run() {
                     client_tv_1.append(
-                            DateUtil.getNowTime() + " Prepare for sampling less than 1 minutes...\n"
+                            DateUtil.getNowTime() + " Prepare for sampling on the first heel strike...\n"
                     );
                 }
             });
 
-            int minute = DateUtil.getNowMinute();
-
-            if (DateUtil.getNowSecond() < 30){
-
-                minute++;
-
-
-                while (DateUtil.getNowMinute() != minute){
-                    continue;
-                }
+            long now = DateUtil.getNowSecond();
+            while (accel_gl[2] < 11.5){
+                continue;
             }
-            else{
-                while (DateUtil.getNowSecond() != 30){
-                    continue;
-                }
-            }
-
 
             //server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
             //Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
@@ -832,9 +757,7 @@ public class client
                 byte[] first_message = new byte[] {};
                 byte[] second_message;
 
-
                 //boolean start_encryption = false;
-
                 while(true){
 
                     byte[] buf = new byte[256];
@@ -870,10 +793,31 @@ public class client
                         /*this message is not encrypted*/
                         second_message = buf;
 
-                        /*first_message is in byte[256]
-                        * need to separate into int[] L_intersection_x/y/z*/
                         //////////////////////////////////////////////////////////////////////////////
+                        /*first_message is in byte[256], now you have received the second message,
+                        so prepare the intersection data
+                         * need to separate into int[] L_intersection_x/y/z*/
                         int i=0;
+                        while (first_message[i] != 71 && first_message[i] != 72){
+                            i++;
+                        }
+                        i++;
+                        int ii = 0;
+                        while (first_message[i] != 71 && first_message[i] != 72){
+                            i++;
+                            ii++;
+                        }
+                        i++;
+                        int iii = 0;
+                        while (first_message[i] != 71 && first_message[i] != 72){
+                            i++;
+                            iii++;
+                        }
+
+                        int[] L_intersection_x = new int[i];
+                        int[] L_intersection_y = new int[ii];
+                        int[] L_intersection_z = new int[iii];
+                        i=0;
                         while (first_message[i] != 71 && first_message[i] != 72){
                             L_intersection_x[i] = (int) first_message[i];
                             i++;
@@ -903,28 +847,30 @@ public class client
                                 f_L_Alice_z, f_key_Alice_z,
                                 L_intersection_x, L_intersection_y, L_intersection_z
                         );
+                        try {
+                            if (alice.decision()) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired success !!");
+                                    }
+                                });
 
-                        if (alice.decision()){
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired success !!");
-                                }
-                            });
+                                mykey = alice.key_out();
 
-                            mykey = alice.key_out();
-
-                        }
-                        else{
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired fail !!");
-                                    client_connection_status.setText("Pair fail !!");
-                                }
-                            });
-
-                            break;
+                            } else {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired fail !!");
+                                        client_connection_status.setText("Pair fail !!");
+                                    }
+                                });
+                                break; // break and close this thread
+                            }
+                        } catch (Exception e){
+                            Log.d(TAG, "error in alice reconciliation");
+                            e.printStackTrace();
                         }
                     }
                     else {
@@ -951,20 +897,18 @@ public class client
     }
 
 
-    /*thread_udp_send
-     * Task: send udp packet to the destinated server ip and port
-     * Input: byte[] message
-     * Note that everything is in byte[] only !!!*/
-    class thread_udp_send implements Runnable {
+    /*Two thread to send the message
+    * One function send the char[] message: only used once
+    * The other one sends the byte[], which is used later*/
+    class thread_udp_send_char implements Runnable {
         private char[] char_message;
 
-        thread_udp_send(char[] char_message) {
+        thread_udp_send_char(char[] char_message) {
             this.char_message = char_message;
         }
 
         @Override
         public void run() {
-
             try{
                 byte[] byte_message = new byte[char_array.length];
                 for(int l=0; l<char_array.length; l++){
@@ -978,10 +922,6 @@ public class client
                 );
 
                 socket.send(packet);
-
-/*                String thing = new String(message);
-                Log.d(TAG, thing);*/
-
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -997,6 +937,38 @@ public class client
     }
 
 
+    class thread_udp_send implements Runnable {
+        private byte[] message;
+
+        thread_udp_send(byte[] message) {
+            this.message = message;
+        }
+
+        @Override
+        public void run() {
+            try{
+
+                DatagramPacket packet = new DatagramPacket(
+                        message,
+                        message.length,
+                        inet_server_address,
+                        server_port
+                );
+
+                socket.send(packet);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        client_tv_2.append(DateUtil.getNowTime() +" client send message\n");
+                    }
+                });
+            }
+            catch (Exception e){
+                Log.d(TAG, "error: thread udp send");
+                e.printStackTrace();
+            }
+        }
+    }
 
 
     /*function: get the local host ip address

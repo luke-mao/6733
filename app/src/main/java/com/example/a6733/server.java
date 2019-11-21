@@ -64,14 +64,10 @@ public class server
      * They will be detailed below*/
 
 
-    /*Define all the thread here*/
-
-
     /*These three text view are designed for your use.
      * Do not output anything outside these three text views
      * Note that the height is "wrap content", convenient to use*/
     TextView server_tv_1, server_tv_2, server_tv_3;
-
     TextView server_tv_ip, server_tv_port;
 
 
@@ -318,6 +314,7 @@ public class server
                         server_tv_3.append(reconciliation_function.int_array_to_string(f_key_Bob_z)+"\n");
 
                         server_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
+
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
                         acc_n[sensor_sample_count] = (double) accel_gl[1];
@@ -341,16 +338,6 @@ public class server
                 break;
         }
 
-//        tv_value1.setText("azimuth：" +
-//                Math.round(Math.toDegrees(fusedOrientation[0]) * 10f) / 10f + "\t\t||\t" +
-//                Math.round(Math.toDegrees(accMagOrientation[0]) * 10f) / 10f);
-//        tv_value2.setText("pitch：     " +
-//                Math.round(Math.toDegrees(fusedOrientation[1]) * 10f) / 10f + "\t\t||\t" +
-//                Math.round(Math.toDegrees(accMagOrientation[1]) * 10f) / 10f);
-//        tv_value3.setText("roll：        " +
-//                (Math.round(Math.toDegrees(fusedOrientation[2]) * 10f) / 10f) + "\t\t||\t" +
-//                Math.round(Math.toDegrees(accMagOrientation[2]) * 10f) / 10f);
-
         // After find fusedOrientation[3], acc_gl can be estimated:
         float[] rot = getRotationMatrixFromOrientation(fusedOrientation);
 
@@ -358,28 +345,11 @@ public class server
         float accel_gl_y_raw = accel_gl[1] = accel[0] * rot[3] + accel[1] * rot[4] + accel[2] * rot[5];
         float accel_gl_z_raw = accel[0] * rot[6] + accel[1] * rot[7] + accel[2] * rot[8];
 
-        // Then apply low pass filter to accel on z-axis:
-        // A low-pass filter passes low-frequency signals/values and attenuates
-        // (reduces the amplitude of) signals/values with frequencies higher than
-        // the cutoff frequency.
 
-        // To detect heel-strike, we ﬁrst apply a low-pass ﬁlter on acceleration along the
-        // gravity direction to reduce noise.
-        /* The cutoff frequency is chosen as 3Hz
-           lpf_scaler = tau / (tau + t_PWM)
-           FOR:
-                tau = 1 / (2 * pi * cut_off_freq) = 0.05305164769
-                t_PWM = 1 / freq_PWM = 0.01 (100 HZ)
-           THUS:
-                lpf_scaler = 0.8414f */
         // acceleration in earth/global frame after applying LPF:
         accel_gl[0] = 0.8414f * accel_gl[0] +  (1 - 0.8414f) * accel_gl_x_raw;
         accel_gl[1] = 0.8414f * accel_gl[1] +  (1 - 0.8414f) * accel_gl_y_raw;
         accel_gl[2] = 0.8414f * accel_gl[2] +  (1 - 0.8414f) * accel_gl_z_raw;
-
-//        tv_value4.setText("accel_x：   " + Math.round(accel_gl[0] * 10f) / 10f);
-//        tv_value5.setText("accel_y：   " + Math.round(accel_gl[1] * 10f) / 10f);
-//        tv_value6.setText("accel_z：   " + Math.round(accel_gl[2] * 10f) / 10f);
 
         /*
         The peak of acceleration along the gravity direction indicates a heel-strike
@@ -401,10 +371,6 @@ public class server
                 steps++;
             }
         }
-//        else {
-//            tv_value7.setText("Steps: " + steps);
-//        }
-
     }
 
     public void extractBits() {
@@ -465,25 +431,8 @@ public class server
         bits_g = getBits(smoothed_acc_g); // z
         bits_n = getBits(smoothed_acc_n); // y
         bits_e = getBits(smoothed_acc_e); // x
-
-//        // bits = bits_g + bits_n + bits_e
-//        for (int i=0; i < 70; i++){
-//            bits[i] = bits_g[i];
-//        }
-//        for (int i=70; i < 140; i++){
-//            bits[i] = bits_n[i-70];
-//        }
-//        for (int i=140; i < 210; i++){
-//            bits[i] = bits_e[i-140];
-//        }
-
-        // show key
-//        for (int i=0; i < 210; i++) {
-//            tv_value8.append("bit" + i + "：   " + bits[i]);
-//            tv_value8.append("\n");
-//        }
-
     }
+
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public int[] getBits(double[] smoothed_acc){
@@ -511,6 +460,7 @@ public class server
         return bits_;
     }
 
+
     public static double calculateSD(double mean, double[] numArray)
     {
         double sum = 0.0, standardDeviation = 0.0;
@@ -521,11 +471,13 @@ public class server
         return Math.sqrt(standardDeviation/length);
     }
 
+
     public void calculateAccMagOrientation() {
         if(SensorManager.getRotationMatrix(rotationMatrix, null, accel, magnet)) {
             SensorManager.getOrientation(rotationMatrix, accMagOrientation);
         }
     }
+
 
     public static final float EPSILON = 0.000000001f;
 
@@ -557,6 +509,7 @@ public class server
         deltaRotationVector[2] = sinThetaOverTwo * normValues[2];
         deltaRotationVector[3] = cosThetaOverTwo;
     }
+
 
     private static final float NS2S = 1.0f / 1000000000.0f;
     private float timestamp;
@@ -710,31 +663,15 @@ public class server
                 @Override
                 public void run() {
                     server_tv_1.append(
-                            DateUtil.getNowTime() + " Prepare for sampling less than 1 minutes...\n"
+                            DateUtil.getNowTime() + " Prepare for sampling on the first heel strike...\n"
                     );
                 }
             });
 
-            int minute = DateUtil.getNowMinute();
-
-            if (DateUtil.getNowSecond() < 30){
-
-                minute++;
-
-
-                while (DateUtil.getNowMinute() != minute){
-                    continue;
-                }
-            }
-            else{
-                while (DateUtil.getNowSecond() != 30){
-                    continue;
-                }
+            while (accel_gl[2] < 11.5){
+                continue;
             }
 
-
-            //server_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
-            //Toast.makeText(this, "start sampling", Toast.LENGTH_SHORT).show();
             Log.d(TAG, "sample start");
             runOnUiThread(new Runnable() {
                 @Override
@@ -747,8 +684,6 @@ public class server
             sensor_sample_count = 0;
         }
     }
-
-
 
 
     /*thread_udp_listen
@@ -831,7 +766,7 @@ public class server
                             i++;
                         }
                         ///////////////////////////////////////////////////////////////////////////////
-
+                        // start the reconciliation of the server
                         bob = new reconciliation_bob(
                                 f_L_Bob_x, f_key_Bob_x,
                                 f_L_Bob_y, f_key_Bob_y,
@@ -844,7 +779,6 @@ public class server
                             byte[] first_message = bob.first_part_message();
                             new Thread(new thread_udp_send(first_message)).start();
 
-
                             byte[] second_message = bob.second_part_message();
                             new Thread(new thread_udp_send(second_message)).start();
 
@@ -856,7 +790,6 @@ public class server
                                     server_tv_2.append("\n"+ DateUtil.getNowTime() +"\nPair Success !!!");
                                 }
                             });
-
                         }
                         else{
                             runOnUiThread(new Runnable() {
@@ -870,7 +803,6 @@ public class server
                         }
                     }
                     else{
-
                         // if the programme reach here, now is time to use the decryption method
                         decryption new_decryption = new decryption(mykey, buf);
                         final String message = new_decryption.decrypt();
@@ -880,10 +812,8 @@ public class server
                                 server_tv_2.append(DateUtil.getNowTime() +"Receive: " + message + "\n");
                             }
                         });
-
                     }
                 }
-
                 // if break from the loop, then stop this thread
                 Thread.currentThread().interrupt();
 
@@ -927,15 +857,12 @@ public class server
                         server_tv_2.append(DateUtil.getNowTime() +"\nserver send message\n");
                     }
                 });
-
-
             } catch (Exception e) {
                 Log.d(TAG, "error: thread udp send");
                 e.printStackTrace();
             }
         }
     }
-
 
 
     /*Get the local host ip address*/
