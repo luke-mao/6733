@@ -293,26 +293,7 @@ public class client
                         f_L_Alice_z = extract_z.treat_index();
                         f_key_Alice_z = extract_z.treat_key();
 
-                        //////////////////////////////////////////////////////////////////////////////
-                        Arrays.fill(char_array, 'G'); // (int)'G' = 71
-                        int i = 0;
-                        for (; i < f_L_Alice_x.length; i++){
-                            char_array[i] = (char) f_L_Alice_x[i];
-                        }
-                        char_array[i] = (char) 'H'; // (int)'H' = 72
-                        i++;
-                        for (int j=0; j < f_L_Alice_y.length; j++){
-                            char_array[j+i] = (char) f_L_Alice_y[j];
-                            i++;
-                        }
-                        char_array[i] = (char) 'H'; // (int)'H' = 72
-                        i++;
-                        for (int k=0; k<f_L_Alice_z.length; k++){
-                            char_array[k+i] = (char) f_L_Alice_z[k];
-                            i++;
-                        }
-                        char_array[i] = (char) 'H'; // (int)'H' = 72
-                        //////////////////////////////////////////////////////////////////////////////
+
 
                         Log.d(TAG, "x direction");
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_x));
@@ -325,8 +306,6 @@ public class client
                         Log.d(TAG, "z direction");
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_z));
                         Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_z));
-
-                        Log.d(TAG, Arrays.toString(char_array));
 
 
                         client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_x)+"\n");
@@ -680,7 +659,9 @@ public class client
                 socket.setReuseAddress(true);
 
                 // alice send the first message, the char_array is prepared when the sensor has recorded enough data
-                new Thread(new thread_udp_send_char(char_array)).start();
+                String send = reconciliation_function.int_array_to_string(L_Alice_z);
+                send = reconciliation_function.final_acc_string(send);
+                new Thread(new thread_udp_send(send.getBytes())).start();
 
                 // start listening
                 new Thread(new thread_udp_listen()).start();
@@ -796,66 +777,23 @@ public class client
                         /*this message is not encrypted*/
                         second_message = buf;
 
-                        //////////////////////////////////////////////////////////////////////////////
-                        /*first_message is in byte[256], now you have received the second message,
-                        so prepare the intersection data
-                         * need to separate into int[] L_intersection_x/y/z*/
-                        int i=0;
-                        while (first_message[i] != 71 && first_message[i] != 72){
-                            i++;
-                        }
-                        i++;
-                        int ii = 0;
-                        while (first_message[i] != 71 && first_message[i] != 72){
-                            i++;
-                            ii++;
-                        }
-                        i++;
-                        int iii = 0;
-                        while (first_message[i] != 71 && first_message[i] != 72){
-                            i++;
-                            iii++;
-                        }
-
-                        int[] L_intersection_x = new int[i];
-                        int[] L_intersection_y = new int[ii];
-                        int[] L_intersection_z = new int[iii];
-                        i=0;
-                        while (first_message[i] != 71 && first_message[i] != 72){
-                            L_intersection_x[i] = (int) first_message[i];
-                            i++;
-                        }
-                        i++;
-                        int j=0;
-                        while (first_message[i] != 71 && first_message[i] != 72) {
-                            L_intersection_y[j] = (int) first_message[i];
-                            i++;
-                            j++;
-                        }
-                        i++;
-                        j=0;
-                        while (first_message[i] != 71 && first_message[i] != 72) {
-                            L_intersection_z[j] = (int) first_message[i];
-                            i++;
-                            j++;
-                        }
-                        //////////////////////////////////////////////////////////////////////////////
 
                         /*now alice can run the reconciliation
                          * simply run it here*/
                         alice = new reconciliation_alice(
-                                second_message,
+                                first_message,second_message,
                                 f_L_Alice_x, f_key_Alice_x,
                                 f_L_Alice_y, f_key_Alice_y,
-                                f_L_Alice_z, f_key_Alice_z,
-                                L_intersection_x, L_intersection_y, L_intersection_z
+                                f_L_Alice_z, f_key_Alice_z
                         );
+
                         try {
                             if (alice.decision()) {
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired success !!");
+                                        client_connection_status.setText("Pair success !!");
                                     }
                                 });
 
@@ -903,43 +841,6 @@ public class client
     /*Two thread to send the message
     * One function send the char[] message: only used once
     * The other one sends the byte[], which is used later*/
-    class thread_udp_send_char implements Runnable {
-        private char[] char_message;
-
-        thread_udp_send_char(char[] char_message) {
-            this.char_message = char_message;
-        }
-
-        @Override
-        public void run() {
-            try{
-                byte[] byte_message = new byte[char_array.length];
-                for(int l=0; l<char_array.length; l++){
-                    byte_message[l] = (byte) char_array[l];
-                }
-                DatagramPacket packet = new DatagramPacket(
-                        byte_message,
-                        byte_message.length,
-                        inet_server_address,
-                        server_port
-                );
-
-                socket.send(packet);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        client_tv_2.append(DateUtil.getNowTime() +" client send message\n");
-                    }
-                });
-            }
-            catch (Exception e){
-                Log.d(TAG, "error: thread udp send");
-                e.printStackTrace();
-            }
-        }
-    }
-
-
     class thread_udp_send implements Runnable {
         private byte[] message;
 

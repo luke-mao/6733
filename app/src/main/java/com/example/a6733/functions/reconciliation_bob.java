@@ -16,17 +16,17 @@ public class reconciliation_bob {
     int[] L_z;
     int[] key_z;
 
-    int[] L_Alice_x;
-    int[] L_Alice_y;
-    int[] L_Alice_z;
+    String message;
 
     int[] key;
+
+    int[] L_Alice_z;
 
     /* this is the initialization of the class */
     public reconciliation_bob(int[] L_x, int[] key_x,
                               int[] L_y, int[] key_y,
                               int[] L_z, int[] key_z,
-                              int[] L_Alice_x, int[] L_Alice_y, int[] L_Alice_z){
+                              byte[] buf){
 
         this.L_x = L_x;
         this.key_x = key_x;
@@ -37,9 +37,7 @@ public class reconciliation_bob {
         this.L_z = L_z;
         this.key_z = key_z;
 
-        this.L_Alice_x = L_Alice_x;
-        this.L_Alice_y = L_Alice_y;
-        this.L_Alice_z = L_Alice_z;
+        this.message = new String(buf);
     }
 
 
@@ -52,15 +50,14 @@ public class reconciliation_bob {
 
     public boolean decision(){
 
-        L_intersection_x = reconciliation_function.intersection_two_int_arrays(L_x, L_Alice_x);
-        L_intersection_y = reconciliation_function.intersection_two_int_arrays(L_y, L_Alice_y);
+        String actual_message = reconciliation_function.split_acc_strings(message);
+        L_Alice_z = reconciliation_function.string_to_int_array(actual_message);
+
+        //L_intersection_x = reconciliation_function.intersection_two_int_arrays(L_x, L_Alice_x);
+        //L_intersection_y = reconciliation_function.intersection_two_int_arrays(L_y, L_Alice_y);
         L_intersection_z = reconciliation_function.intersection_two_int_arrays(L_z, L_Alice_z);
 
-        return reconciliation_function.bob_similarity_check_three_direction(
-                L_x, L_intersection_x,
-                L_y, L_intersection_y,
-                L_z, L_intersection_z
-        );
+        return reconciliation_function.bob_similarity_check(L_z, L_intersection_z);
     }
 
 
@@ -68,32 +65,10 @@ public class reconciliation_bob {
      * first part is simply bytes[] of the message of L_intersection of three directions*/
     public byte[] first_part_message() {
 
-        /*here, we have L_intersection_x/y/z as int[], need to combine them together and change to byte[]*/
-        char[] return_char_array = new char[256];
-        Arrays.fill(return_char_array, 'G'); // (int)'G' = 71
-        int i = 0;
-        for (; i < L_intersection_x.length; i++) {
-            return_char_array[i] = (char) L_intersection_x[i];
-        }
-        return_char_array[i] = (char) 'H'; // (int)'H' = 72
-        i++;
-        for (int j = 0; j < L_intersection_y.length; j++) {
-            return_char_array[j + i] = (char) L_intersection_y[j];
-            i++;
-        }
-        return_char_array[i] = (char) 'H'; // (int)'H' = 72
-        i++;
-        for (int k = 0; k < L_intersection_z.length; k++) {
-            return_char_array[k + i] = (char) L_intersection_z[k];
-            i++;
-        }
-        return_char_array[i] = (char) 'H'; // (int)'H' = 72
+        String message = reconciliation_function.int_array_to_string(L_intersection_z);
+        String result = reconciliation_function.final_acc_string(message);
+        return result.getBytes();
 
-        byte[] return_byte_array = new byte[256];
-        for (i=0; i < 256; i++){
-            return_byte_array[i] = (byte) return_char_array[i];
-        }
-        return return_byte_array;
     }
 
 
@@ -103,12 +78,9 @@ public class reconciliation_bob {
 
         /*MACencrypt(int[] key, int[] window)*/
         // first combine three keys and three intersection windows
-        key = reconciliation_function.intersection_keys_three_directions(
-                key_x, L_x, L_intersection_x,
-                key_y, L_y, L_intersection_y,
-                key_z, L_z, L_intersection_z);
+        key = reconciliation_function.intersection_keys_one_direction(key_z, L_z, L_intersection_z);
 
-        int[] window = reconciliation_function.merge_three_int_array(L_intersection_x,L_intersection_y,L_intersection_z);
+        int[] window = L_intersection_z;
 
         return reconciliation_function.MACencrypt(key,window);
     }

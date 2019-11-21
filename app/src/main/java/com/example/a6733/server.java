@@ -737,47 +737,12 @@ public class server
                             }
                         });
 
-                        ///////////////////////////////////////////////////////////////////////////////
-                        /*name: L_ALice_x, L_Alice_y, L_ALice_z*/
-                        int[] int_buf = new int[buf.length];
-                        for (int i=0; i<buf.length; i++){
-                            int_buf[i] = (int) buf[i];
-                        }
-                        // L_ALice_x:
-                        int i = 0;
-                        while(int_buf[i] != 71 && int_buf[i] != 72){
-                            L_ALice_x[i] = int_buf[i];
-                            i++;
-                        }
-                        i++;
-                        // L_ALice_y:
-                        int j = 0;
-                        while(int_buf[i] != 71 && int_buf[i] != 72){
-                            L_ALice_y[j] = int_buf[i];
-                            j++;
-                            i++;
-                        }
-                        i++;
-                        // L_ALice_z:
-                        j = 0;
-                        while(int_buf[i] != 71 && int_buf[i] != 72){
-                            L_ALice_z[j] = int_buf[i];
-                            j++;
-                            i++;
-                        }
-
-                        Log.d(TAG, Arrays.toString(L_ALice_x));
-                        Log.d(TAG, Arrays.toString(L_ALice_y));
-                        Log.d(TAG, Arrays.toString(L_ALice_z));
-
-
-                        ///////////////////////////////////////////////////////////////////////////////
                         // start the reconciliation of the server
                         bob = new reconciliation_bob(
                                 f_L_Bob_x, f_key_Bob_x,
                                 f_L_Bob_y, f_key_Bob_y,
                                 f_L_Bob_z, f_key_Bob_z,
-                                L_ALice_x, L_ALice_y, L_ALice_z);
+                                buf);
 
                         if (bob.decision()){
 
