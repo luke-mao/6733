@@ -3,6 +3,7 @@ package com.example.a6733.functions;
 import android.util.Log;
 
 import java.security.Key;
+import java.util.Arrays;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

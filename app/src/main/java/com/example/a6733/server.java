@@ -54,7 +54,9 @@ public class server
         extends AppCompatActivity
         implements View.OnClickListener, SensorEventListener {
 
-
+    public int[] L_ALice_x = new int[70];
+    public int[] L_ALice_y = new int[70];
+    public int[] L_ALice_z = new int[70];
     /*This is the main coding part for server_service
      * Most code for udp communication are similar
      * Difference is that client input the IP and port to connect to the server
@@ -800,7 +802,35 @@ public class server
                             }
                         });
 
-                        bob = new reconciliation_bob(buf, f_L_Bob_x, f_key_Bob_x);
+                        ///////////////////////////////////////////////////////////////////////////////
+                        /*name: L_ALice_x, L_Alice_y, L_ALice_z*/
+                        int[] int_buf = new int[buf.length];
+                        for (int i=0; i<buf.length; i++){
+                            int_buf[i] = (int) buf[i];
+                        }
+                        // L_ALice_x:
+                        int i = 0;
+                        while(int_buf[i] != 71 && int_buf[i] != 72){
+                            L_ALice_x[i] = int_buf[i];
+                            i++;
+                        }
+                        // L_ALice_y:
+                        int j = 0;
+                        while(int_buf[i] != 71 && int_buf[i] != 72){
+                            L_ALice_y[j] = int_buf[i];
+                            j++;
+                            i++;
+                        }
+                        // L_ALice_z:
+                        j = 0;
+                        while(int_buf[i] != 71 && int_buf[i] != 72){
+                            L_ALice_z[j] = int_buf[i];
+                            j++;
+                            i++;
+                        }
+                        ///////////////////////////////////////////////////////////////////////////////
+
+                        bob = new reconciliation_bob(buf, f_L_Bob_z, f_key_Bob_z);
 
                         if (bob.decision()){
 
@@ -876,10 +906,9 @@ public class server
         public void run() {
 
             try {
-                byte[] buf = message;
                 DatagramPacket packet = new DatagramPacket(
-                        buf,
-                        buf.length,
+                        message,
+                        message.length,
                         inet_client_address,
                         client_port
                 );

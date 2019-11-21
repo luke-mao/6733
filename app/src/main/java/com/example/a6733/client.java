@@ -1,3 +1,7 @@
+// char_array is preset to '71' and separated by '72'
+// so char_array is made like such:
+//      L_x + '72' + L_y + '72' + L_z + '72' + ('71's for the rest slots)
+
 package com.example.a6733;
 
 import com.example.a6733.functions.DateUtil;
@@ -173,7 +177,7 @@ public class client
 
     public boolean start_recording_flag = false;
 
-
+    public char[] char_array = new char[256];
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -290,6 +294,25 @@ public class client
 
                         f_L_Alice_z = extract_z.treat_index();
                         f_key_Alice_z = extract_z.treat_key();
+
+                        //////////////////////////////////////////////////////////////////////////////
+                        Arrays.fill(char_array, 'G'); // (int)'G' = 71
+                        int i = 0;
+                        for (; i<f_L_Alice_x.length; i++){
+                            char_array[i] = (char) f_L_Alice_x[i];
+                        }
+                        char_array[i] = (char) 'H'; // (int)'H' = 72
+                        for (int j=0; j<f_L_Alice_y.length; j++){
+                            char_array[j+i] = (char) f_L_Alice_y[j];
+                            i++;
+                        }
+                        char_array[i] = (char) 'H'; // (int)'H' = 72
+                        for (int k=0; k<f_L_Alice_z.length; k++){
+                            char_array[k+i] = (char) f_L_Alice_z[k];
+                            i++;
+                        }
+                        char_array[i] = (char) 'H'; // (int)'H' = 72
+                        //////////////////////////////////////////////////////////////////////////////
 
                         Log.d(TAG, "x direction");
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_x));
@@ -701,12 +724,12 @@ public class client
 
 
                 // prepare for the Alice message
-                String alice_message = reconciliation_function.final_acc_string(
-                        reconciliation_function.int_array_to_string(f_L_Alice_x)
+                /*String alice_message = reconciliation_function.final_acc_string(
+                        reconciliation_function.int_array_to_string(f_L_Alice_z)
                 );
+*/
 
-
-                new Thread(new thread_udp_send(alice_message.getBytes())).start();
+                new Thread(new thread_udp_send(char_array)).start();
 
                 // start the sending thread, send message "connect"
                 new Thread(new thread_udp_listen()).start();
@@ -719,8 +742,11 @@ public class client
         }
         else if(v.getId() == R.id.client_send) {
 
-            /*Send the message using the thread
-             * Clean the input box*/
+            int rrrr = 9;
+        }
+
+/*            *//*Send the message using the thread
+             * Clean the input box*//*
             String message = client_et.getText().toString();
             client_et.setText("");
 
@@ -733,7 +759,7 @@ public class client
         else if (v.getId() == R.id.client_sample_start){
 
             new Thread(new thread_timer()).start();
-        }
+        }*/
     }
 
 
@@ -841,7 +867,7 @@ public class client
                         /*now alice can run the reconciliation
                          * simply run it here*/
                         alice = new reconciliation_alice(
-                                first_message, second_message, f_L_Alice_x, f_key_Alice_x
+                                first_message, second_message, f_L_Alice_z, f_key_Alice_z
                         );
 
                         if (alice.decision()){
@@ -896,28 +922,31 @@ public class client
      * Input: byte[] message
      * Note that everything is in byte[] only !!!*/
     class thread_udp_send implements Runnable {
-        private byte[] message;
+        private char[] char_message;
 
-        thread_udp_send(byte[] message) {
-            this.message = message;
+        thread_udp_send(char[] char_message) {
+            this.char_message = char_message;
         }
 
         @Override
         public void run() {
 
             try{
-                byte[] buf = message;
+                byte[] byte_message = new byte[char_array.length];
+                for(int l=0; l<char_array.length; l++){
+                    byte_message[l] = (byte) char_array[l];
+                }
                 DatagramPacket packet = new DatagramPacket(
-                        buf,
-                        buf.length,
+                        byte_message,
+                        byte_message.length,
                         inet_server_address,
                         server_port
                 );
 
                 socket.send(packet);
 
-                String thing = new String(message);
-                Log.d(TAG, thing);
+/*                String thing = new String(message);
+                Log.d(TAG, thing);*/
 
                 runOnUiThread(new Runnable() {
                     @Override
