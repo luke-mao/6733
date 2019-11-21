@@ -129,6 +129,22 @@ public class reconciliation_function {
         return simiX > cutoff;
     }
 
+    public static boolean bob_similarity_check_three_direction(
+            int[] mywindowX, int[] intersectionX,
+            int[] mywindowY, int[] intersectionY,
+            int[] mywindowZ, int[] intersectionZ){
+
+        double cutoff = 0.1;
+
+        double simiX = (double) intersectionX.length / (double) mywindowX.length;
+        double simiY = (double) intersectionY.length / (double) mywindowY.length;
+        double simiZ = (double) intersectionZ.length / (double) mywindowZ.length;
+
+        Log.d("Similarity", String.valueOf(simiX));
+
+        return ((simiX + simiY + simiZ)/3) > cutoff;
+    }
+
 
     /*use the MAC method to encrypt the window int array using the key int_key*/
     public static byte[] MACencrypt(int[] int_key, int[] window){

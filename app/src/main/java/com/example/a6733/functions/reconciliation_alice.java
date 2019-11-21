@@ -15,18 +15,36 @@ public class reconciliation_alice{
      * First message is L_bar, second message is the MAC encryption
      * In addition, other inputs are alice key three axis, alice window index three axis*/
 
-    String first_message;
     byte[] second_message;
     int[] L_x;
     int[] key_x;
+    int[] L_y;
+    int[] key_y;
+    int[] L_z;
+    int[] key_z;
+    int[] L_intersection_x;
+    int[] L_intersection_y;
+    int[] L_intersection_z;
     int[] key;
 
-    public reconciliation_alice(byte[] first_message, byte[] second_message, int[] L_x, int[] key_x){
+    public reconciliation_alice(byte[] second_message,
+                                int[] L_x, int[] key_x,
+                                int[] L_y, int[] key_y,
+                                int[] L_z, int[] key_z,
+                                int[] L_intersection_x,
+                                int[] L_intersection_y,
+                                int[] L_intersection_z){
 
-        this.first_message = new String(first_message); // the input are in byte[], here change into string
         this.second_message = second_message;
         this.L_x = L_x;
         this.key_x = key_x;
+        this.L_y = L_y;
+        this.key_y = key_y;
+        this.L_z = L_z;
+        this.key_z = key_z;
+        this.L_intersection_x = L_intersection_x;
+        this.L_intersection_y = L_intersection_y;
+        this.L_intersection_z = L_intersection_z;
     }
 
 
@@ -34,14 +52,15 @@ public class reconciliation_alice{
 
         /*first compute the intersection of keys
          * need to separate the strings first*/
-        String string_int = reconciliation_function.split_acc_strings(first_message);
 
-        int[] L_intersection_x = reconciliation_function.string_to_int_array(string_int);
 
         //now find the alice total key
-        key = reconciliation_function.intersection_keys_one_direction(key_x, L_x, L_intersection_x);
+        key = reconciliation_function.intersection_keys_three_directions(
+                key_x, L_x, L_intersection_x,
+                key_y, L_y, L_intersection_y,
+                key_z, L_z, L_intersection_z);
 
-        int[] window = L_intersection_x;
+        int[] window = reconciliation_function.merge_three_int_array(L_intersection_x,L_intersection_y,L_intersection_z);
 
         // get the MAC byte[]
         byte[] alice_mac = reconciliation_function.MACencrypt(key,window);

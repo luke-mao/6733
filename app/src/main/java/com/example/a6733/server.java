@@ -495,8 +495,8 @@ public class server
         // quantization
         mean = Arrays.stream(samplings).average().orElse(Double.NaN);
         stdev = calculateSD(mean, samplings);
-        upper_ts = mean + 0.8 * stdev;
-        lower_ts = mean - 0.8 * stdev;
+        upper_ts = mean + 0.9 * stdev;
+        lower_ts = mean - 0.9 * stdev;
         // form bits as key
         int[] bits_= new int[70];
         for (int i = 0; i < 70; i++){
@@ -814,6 +814,7 @@ public class server
                             L_ALice_x[i] = int_buf[i];
                             i++;
                         }
+                        i++;
                         // L_ALice_y:
                         int j = 0;
                         while(int_buf[i] != 71 && int_buf[i] != 72){
@@ -821,6 +822,7 @@ public class server
                             j++;
                             i++;
                         }
+                        i++;
                         // L_ALice_z:
                         j = 0;
                         while(int_buf[i] != 71 && int_buf[i] != 72){
@@ -830,7 +832,11 @@ public class server
                         }
                         ///////////////////////////////////////////////////////////////////////////////
 
-                        bob = new reconciliation_bob(buf, f_L_Bob_z, f_key_Bob_z);
+                        bob = new reconciliation_bob(
+                                f_L_Bob_x, f_key_Bob_x,
+                                f_L_Bob_y, f_key_Bob_y,
+                                f_L_Bob_z, f_key_Bob_z,
+                                L_ALice_x, L_ALice_y, L_ALice_z);
 
                         if (bob.decision()){
 

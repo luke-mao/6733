@@ -166,6 +166,10 @@ public class client
     private double upper_ts = 0;
     private double lower_ts = 0;
 
+    int[] L_intersection_x;
+    int[] L_intersection_y;
+    int[] L_intersection_z;
+
     // prev_peak time in millis
     private long t_peak = 0;
 
@@ -302,11 +306,13 @@ public class client
                             char_array[i] = (char) f_L_Alice_x[i];
                         }
                         char_array[i] = (char) 'H'; // (int)'H' = 72
+                        i++;
                         for (int j=0; j<f_L_Alice_y.length; j++){
                             char_array[j+i] = (char) f_L_Alice_y[j];
                             i++;
                         }
                         char_array[i] = (char) 'H'; // (int)'H' = 72
+                        i++;
                         for (int k=0; k<f_L_Alice_z.length; k++){
                             char_array[k+i] = (char) f_L_Alice_z[k];
                             i++;
@@ -474,8 +480,8 @@ public class client
         // quantization
         mean = Arrays.stream(samplings).average().orElse(Double.NaN);
         stdev = calculateSD(mean, samplings);
-        upper_ts = mean + 0.8 * stdev;
-        lower_ts = mean - 0.8 * stdev;
+        upper_ts = mean + 0.9 * stdev;
+        lower_ts = mean - 0.9 * stdev;
         // form bits as key
         int[] bits_= new int[70];
         for (int i = 0; i < 70; i++){
@@ -743,23 +749,21 @@ public class client
         else if(v.getId() == R.id.client_send) {
 
             int rrrr = 9;
-        }
-
-/*            *//*Send the message using the thread
-             * Clean the input box*//*
-            String message = client_et.getText().toString();
-            client_et.setText("");
-
-            if (!message.isEmpty()) {
-                encryption new_encryption = new encryption(mykey, message);
-                byte[] byte_message = new_encryption.encrypt();
-                new Thread(new thread_udp_send(byte_message)).start();
-            }
+//            //*//*Send the message using the thread
+//             * Clean the input box*//*
+//            String message = client_et.getText().toString();
+//            client_et.setText("");
+//
+//            if (!message.isEmpty()) {
+//                encryption new_encryption = new encryption(mykey, message);
+//                byte[] byte_message = new_encryption.encrypt();
+//                new Thread(new thread_udp_send(byte_message)).start();
+//            }
         }
         else if (v.getId() == R.id.client_sample_start){
 
             new Thread(new thread_timer()).start();
-        }*/
+        }
     }
 
 
@@ -827,6 +831,8 @@ public class client
                 int messenge_counter = 0;
                 byte[] first_message = new byte[] {};
                 byte[] second_message;
+
+
                 //boolean start_encryption = false;
 
                 while(true){
@@ -864,10 +870,38 @@ public class client
                         /*this message is not encrypted*/
                         second_message = buf;
 
+                        /*first_message is in byte[256]
+                        * need to separate into int[] L_intersection_x/y/z*/
+                        //////////////////////////////////////////////////////////////////////////////
+                        int i=0;
+                        while (first_message[i] != 71 && first_message[i] != 72){
+                            L_intersection_x[i] = (int) first_message[i];
+                            i++;
+                        }
+                        i++;
+                        int j=0;
+                        while (first_message[i] != 71 && first_message[i] != 72) {
+                            L_intersection_y[j] = (int) first_message[i];
+                            i++;
+                            j++;
+                        }
+                        i++;
+                        j=0;
+                        while (first_message[i] != 71 && first_message[i] != 72) {
+                            L_intersection_z[j] = (int) first_message[i];
+                            i++;
+                            j++;
+                        }
+                        //////////////////////////////////////////////////////////////////////////////
+
                         /*now alice can run the reconciliation
                          * simply run it here*/
                         alice = new reconciliation_alice(
-                                first_message, second_message, f_L_Alice_z, f_key_Alice_z
+                                second_message,
+                                f_L_Alice_x, f_key_Alice_x,
+                                f_L_Alice_y, f_key_Alice_y,
+                                f_L_Alice_z, f_key_Alice_z,
+                                L_intersection_x, L_intersection_y, L_intersection_z
                         );
 
                         if (alice.decision()){
