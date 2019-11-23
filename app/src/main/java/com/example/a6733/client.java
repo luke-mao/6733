@@ -307,7 +307,7 @@ public class client
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_z));
                         Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_z));
 
-                        client_tv_1.append(DateUtil.getNowTime() + "\nFinish sampling\n");
+                        client_tv_1.append(DateUtil.getNowTime() + "  Finish sampling\n");
 
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
@@ -672,6 +672,7 @@ public class client
                 encryption new_encryption = new encryption(mykey, message);
                 byte[] byte_message = new_encryption.encrypt();
                 new Thread(new thread_udp_send(byte_message)).start();
+
             }
         }
         else if (v.getId() == R.id.client_sample_start){
@@ -690,7 +691,7 @@ public class client
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    client_tv_1.append(DateUtil.getNowTime() + "\nPrepare for sampling on the first heel strike...\n");
+                    client_tv_1.append(DateUtil.getNowTime() + "  Prepare for sampling on the first heel strike...\n");
                 }
             });
 
@@ -705,7 +706,7 @@ public class client
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    client_tv_1.append(DateUtil.getNowTime() + "\nStart Sampling\n");
+                    client_tv_1.append(DateUtil.getNowTime() + "  Start Sampling\n");
                 }
             });
 
@@ -752,7 +753,7 @@ public class client
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            client_tv_1.append(DateUtil.getNowTime() + "\nreceive message\n");
+                            client_tv_1.append(DateUtil.getNowTime() + "  receive message\n");
                         }
                     });
 
@@ -784,7 +785,7 @@ public class client
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    client_tv_1.append(DateUtil.getNowTime() + "\nPaired success !!\n");
+                                    client_tv_1.append(DateUtil.getNowTime() + "  Paired success !!\n");
                                     client_connection_status.setText("Pair success !!");
                                 }
                             });
@@ -795,7 +796,7 @@ public class client
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    client_tv_1.append(DateUtil.getNowTime() + "\nPaired fail !!\n");
+                                    client_tv_1.append(DateUtil.getNowTime() + "  Paired fail !!\n");
                                     client_connection_status.setText("Pair fail !!");
                                 }
                             });
@@ -853,7 +854,7 @@ public class client
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        client_tv_1.append(DateUtil.getNowTime() +"\nclient send message\n");
+                        client_tv_1.append(DateUtil.getNowTime() +"  client send message\n");
                     }
                 });
             }
@@ -880,8 +881,8 @@ public class client
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        client_tv_1.append(DateUtil.getNowTime() +"\nPair fail\n");
-                        client_connection_status.setText("Pair fail");
+                        client_tv_1.append(DateUtil.getNowTime() +"  Pair fail!!!\n");
+                        client_connection_status.setText("Pair fail !!");
                     }
                 });
                 // stop the listening thread

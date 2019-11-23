@@ -301,7 +301,7 @@ public class server
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Bob_z));
                         Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Bob_z));
 
-                        server_tv_1.append(DateUtil.getNowTime() + "\nFinish sampling\n");
+                        server_tv_1.append(DateUtil.getNowTime() + "  Finish sampling\n");
 
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
@@ -650,7 +650,7 @@ public class server
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    server_tv_1.append(DateUtil.getNowTime() + "\nPrepare for sampling on the first heel strike...\n");
+                    server_tv_1.append(DateUtil.getNowTime() + "  Prepare for sampling on the first heel strike...\n");
                 }
             });
 
@@ -662,7 +662,7 @@ public class server
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    server_tv_1.append(DateUtil.getNowTime() + "\nStart Sampling\n");
+                    server_tv_1.append(DateUtil.getNowTime() + "  Start Sampling\n");
                 }
             });
 
@@ -708,7 +708,7 @@ public class server
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            server_tv_1.append(DateUtil.getNowTime() + "\nreceive message\n");
+                            server_tv_1.append(DateUtil.getNowTime() + "  receive message\n");
                         }
                     });
 
@@ -744,8 +744,8 @@ public class server
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    server_tv_1.append(DateUtil.getNowTime() +"\nPair Success !!!\n");
-                                    server_connection_status.setText("Pair success");
+                                    server_tv_1.append(DateUtil.getNowTime() +"  Pair Success !!\n");
+                                    server_connection_status.setText("Pair success !!");
                                 }
                             });
 
@@ -757,8 +757,8 @@ public class server
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    server_tv_1.append(DateUtil.getNowTime() +"\nPair fail !!!\n");
-                                    server_connection_status.setText("Pair fail");
+                                    server_tv_1.append(DateUtil.getNowTime() +"  Pair fail !!!\n");
+                                    server_connection_status.setText("Pair fail !!");
                                 }
                             });
                             listening_flag = false;
@@ -818,7 +818,7 @@ public class server
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        server_tv_1.append(DateUtil.getNowTime() +"\nserver send message\n");
+                        server_tv_1.append(DateUtil.getNowTime() +"  server send message\n");
                     }
                 });
             } catch (Exception e) {
@@ -843,8 +843,8 @@ public class server
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        server_tv_1.append(DateUtil.getNowTime() +"\nPair fail \n");
-                        server_connection_status.setText("Pair fail");
+                        server_tv_1.append(DateUtil.getNowTime() +"  Pair fail!!\n");
+                        server_connection_status.setText("Pair fail !!");
                     }
                 });
 
