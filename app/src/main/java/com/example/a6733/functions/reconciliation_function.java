@@ -259,4 +259,24 @@ public class reconciliation_function {
         return result;
     }
 
+
+    public static int[] XOR_function(int[] input){
+
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length-1; i++){
+            if (input[i] == 0 & input[i+1] == 0){
+                output[i] = 0;
+            }
+            else if (input[i] == 0 & input[i+1]==1){
+                output[i] = 1;
+            }
+            else if (input[i]==1 & input[i+1]==0){
+                output[i] = 1;
+            }
+            else if (input[i]==1 & input[i+1]==1){
+                output[i] = 0;
+            }
+        }
+        return output;
+    }
 }

@@ -5,54 +5,29 @@
     android:layout_margin="16dp"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/client_ip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        style="@style/text_style"/>
-
-    <TextView
-        android:id="@+id/client_port"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        style="@style/text_style" />
-
-    <EditText
-        android:id="@+id/client_input_server_ip"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Server IP address"
-        android:inputType="text" />
+        android:orientation="horizontal">
 
-    <EditText
-        android:id="@+id/client_input_server_port"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Port No"
-        android:inputType="number" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1.3"
+            android:layout_height="wrap_content"
+            style="@style/text_style"
+            android:text="You are client"
+            android:textStyle="bold"/>
 
-    <Button
-        android:id="@+id/client_sample_start"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="16dp"
-        android:text="Start Sample" />
+        <TextView
+            android:id="@+id/client_connection_status"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            style="@style/text_style"
+            android:text="Not connected"
+            android:textStyle="bold"/>
 
-    <Button
-        android:id="@+id/client_button_connect"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="16dp"
-        android:text="Start Connect" />
-
-    <TextView
-        android:id="@+id/client_connection_status"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        style="@style/text_style"
-        android:text="Not connected"/>
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -65,25 +40,72 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/client_ip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/text_style"
+                android:text="Your IP = "/>
+
+            <TextView
+                android:id="@+id/client_port"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/text_style"
+                android:text="Your port = "/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/client_input_server_ip"
+                    android:layout_width="0dp"
+                    android:layout_weight="2.5"
+                    android:layout_height="wrap_content"
+                    android:hint="Server IP address"
+                    android:inputType="text" />
+
+                <EditText
+                    android:id="@+id/client_input_server_port"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="Port No"
+                    android:inputType="number" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/client_sample_start"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="Start Sample" />
+
+                <Button
+                    android:id="@+id/client_button_connect"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="Start Connect" />
+
+            </LinearLayout>
+
+            <TextView
                 android:id="@+id/client_tv_1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 style="@style/text_style"
-                android:background="#bbbbbb" />
-
-            <TextView
-                android:id="@+id/client_tv_2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                style="@style/text_style"
-                android:background="#cccccc"/>
-
-            <TextView
-                android:id="@+id/client_tv_3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                style="@style/text_style"
-                android:background="#dddddd"/>
+                android:background="#eeeeee"
+                android:minHeight="300dp"/>
 
             <EditText
                 android:id="@+id/client_et"
@@ -101,8 +123,7 @@
                 android:text="SEND" />
 
         </LinearLayout>
+
     </ScrollView>
-
-
 
 </LinearLayout>

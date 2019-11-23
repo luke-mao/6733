@@ -4,33 +4,57 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:paddingTop="50dp"
+        android:paddingTop="30dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Group 15 IoT Genius\nAutomatic key generation for on body devices\nPlease select your role"
-        android:textSize="17sp"
+        android:text="Group 15 IoT Genius\nAutomatic Key Generation \nFor On Body Devices"
+        android:textSize="20sp"
         android:textColor="#000000"
         android:textAlignment="center"/>
 
-    <Button
-        android:id="@+id/client"
+    <TextView
+        android:paddingTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp"
+        android:text="ZHENGYU CHEN\nKEVIN KADINO\nJINJIE MAO\n"
+        android:textSize="18sp"
         android:textColor="#000000"
-        android:textSize="17sp"
-        android:text="client"
+        android:textStyle="italic"
         android:textAlignment="center"/>
 
-    <Button
-        android:id="@+id/server"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp"
-        android:textColor="#000000"
-        android:textSize="17sp"
-        android:text="server"
-        android:textAlignment="center"/>
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/client"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:padding="20dp"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:text="client"
+            android:textAlignment="center"/>
+
+        <Button
+            android:id="@+id/server"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:padding="20dp"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:text="server"
+            android:textAlignment="center"/>
+
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/background" />
 
 
 </LinearLayout>

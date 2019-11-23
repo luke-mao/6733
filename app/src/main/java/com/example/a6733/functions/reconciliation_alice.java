@@ -80,9 +80,13 @@ public class reconciliation_alice{
 
 
     public String key_out(){
+        // now the key is in variable "key"
+        // perform bitwise XOR to increase randomness
+        int[] xor_key = reconciliation_function.XOR_function(key);
+
         // so now we have the int key, check the length,
         // if less than 16 digits, make it to 16 digits, if more, then extract the first 16 digits
-        String potential_key = reconciliation_function.int_array_to_string_no_comma(key);
+        String potential_key = reconciliation_function.int_array_to_string_no_comma(xor_key);
         String final_key = "";
 
         if (potential_key.length() > 16){

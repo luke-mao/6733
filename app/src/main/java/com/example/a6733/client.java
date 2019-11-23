@@ -71,8 +71,10 @@ public class client
     /*These three text view are designed for your use.
      * Do not output anything outside these three text views
      * Note that the height is "wrap content", convenient to use*/
-    TextView client_tv_1, client_tv_2, client_tv_3;
+    TextView client_tv_1;
     TextView client_tv_ip, client_tv_port;
+
+    boolean listening_flag = true;
 
     /*This is the input message edittext for the client
      * We can set text at here for information transfer
@@ -114,6 +116,8 @@ public class client
     reconciliation_alice alice;
 
     String mykey;
+
+    int messenge_counter = 0;
 
     // Temporary variables to store sensor data
     private SensorManager mSensorManager = null;
@@ -184,8 +188,6 @@ public class client
         /*Get textview, edit text done*/
         client_tv_1 = findViewById(R.id.client_tv_1);
         client_tv_1.setText("");
-        client_tv_2 = findViewById(R.id.client_tv_2);
-        client_tv_3 = findViewById(R.id.client_tv_3);
         client_connection_status = findViewById(R.id.client_connection_status);
         client_et = findViewById(R.id.client_et);
 
@@ -201,12 +203,12 @@ public class client
             Log.d(TAG, "error get local ip address");
         }
 
-        client_tv_ip.setText(client_ip);
-        client_tv_port.setText("8080");
+        client_tv_ip.append(client_ip);
+        client_tv_port.append("8080");
 
 
         client_input_server_ip = findViewById(R.id.client_input_server_ip);
-        client_input_server_ip.setText("172.20.10.2");
+        client_input_server_ip.setText("10.0.0.75");
 
         client_input_server_port = findViewById(R.id.client_input_server_port);
         client_input_server_port.setText("8080");
@@ -293,8 +295,6 @@ public class client
                         f_L_Alice_z = extract_z.treat_index();
                         f_key_Alice_z = extract_z.treat_key();
 
-
-
                         Log.d(TAG, "x direction");
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_x));
                         Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_x));
@@ -307,17 +307,7 @@ public class client
                         Log.d(TAG,reconciliation_function.int_array_to_string(f_L_Alice_z));
                         Log.d(TAG, reconciliation_function.int_array_to_string(f_key_Alice_z));
 
-
-                        client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_x)+"\n");
-                        client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_x)+"\n");
-
-                        client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_y)+"\n");
-                        client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_y)+"\n");
-
-                        client_tv_3.append(reconciliation_function.int_array_to_string(f_L_Alice_z)+"\n");
-                        client_tv_3.append(reconciliation_function.int_array_to_string(f_key_Alice_z)+"\n");
-
-                        client_tv_1.append(DateUtil.getNowTime() + " Finish sampling");
+                        client_tv_1.append(DateUtil.getNowTime() + "\nFinish sampling\n");
 
                     } else if (sensor_sample_count < 750) {
                         acc_e[sensor_sample_count] = (double) accel_gl[0];
@@ -662,6 +652,8 @@ public class client
                 String send = reconciliation_function.int_array_to_string(L_Alice_z);
                 send = reconciliation_function.final_acc_string(send);
                 new Thread(new thread_udp_send(send.getBytes())).start();
+                /*Client send the first message, wait for 10 seconds, it no incoming message, then reconciliation fail*/
+                new Thread(new waiting()).start();
 
                 // start listening
                 new Thread(new thread_udp_listen()).start();
@@ -676,7 +668,7 @@ public class client
             String message = client_et.getText().toString();
             client_et.setText("");
 
-            if (!message.isEmpty()) {
+            if (!message.isEmpty() & listening_flag) {
                 encryption new_encryption = new encryption(mykey, message);
                 byte[] byte_message = new_encryption.encrypt();
                 new Thread(new thread_udp_send(byte_message)).start();
@@ -698,9 +690,7 @@ public class client
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    client_tv_1.append(
-                            DateUtil.getNowTime() + " Prepare for sampling on the first heel strike...\n"
-                    );
+                    client_tv_1.append(DateUtil.getNowTime() + "\nPrepare for sampling on the first heel strike...\n");
                 }
             });
 
@@ -715,7 +705,7 @@ public class client
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    client_tv_1.append(DateUtil.getNowTime() + " Start Sampling\n");
+                    client_tv_1.append(DateUtil.getNowTime() + "\nStart Sampling\n");
                 }
             });
 
@@ -723,7 +713,6 @@ public class client
             sensor_sample_count = 0;
         }
     }
-
 
 
     /*thread_udp_listen
@@ -737,7 +726,7 @@ public class client
             try {
 
                 /*define variable for the counting of messages*/
-                int messenge_counter = 0;
+
                 byte[] first_message = new byte[] {};
                 byte[] second_message;
 
@@ -752,6 +741,10 @@ public class client
                     );
 
                     socket.receive(packet);
+                    if (! listening_flag){
+                        break;
+                    }
+
                     messenge_counter++;     // add one to the messenger counter
 
                     buf = packet.getData();
@@ -759,7 +752,7 @@ public class client
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            client_tv_2.append(DateUtil.getNowTime() + "\n" + "receive message\n");
+                            client_tv_1.append(DateUtil.getNowTime() + "\nreceive message\n");
                         }
                     });
 
@@ -787,48 +780,45 @@ public class client
                                 f_L_Alice_z, f_key_Alice_z
                         );
 
-                        try {
-                            if (alice.decision()) {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired success !!");
-                                        client_connection_status.setText("Pair success !!");
-                                    }
-                                });
+                        if (alice.decision()) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    client_tv_1.append(DateUtil.getNowTime() + "\nPaired success !!\n");
+                                    client_connection_status.setText("Pair success !!");
+                                }
+                            });
 
-                                mykey = alice.key_out();
+                            mykey = alice.key_out();
 
-                            } else {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        client_tv_2.append("\n" + DateUtil.getNowTime() + "\nPaired fail !!");
-                                        client_connection_status.setText("Pair fail !!");
-                                    }
-                                });
-                                break; // break and close this thread
-                            }
-                        } catch (Exception e){
-                            Log.d(TAG, "error in alice reconciliation");
-                            e.printStackTrace();
+                        } else {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    client_tv_1.append(DateUtil.getNowTime() + "\nPaired fail !!\n");
+                                    client_connection_status.setText("Pair fail !!");
+                                }
+                            });
+                            listening_flag = false;
+                            break; // break and close this thread
                         }
+
                     }
                     else {
                         // if the programme reach here, now is time to use the decryption method
-                        decryption new_decryption = new decryption(mykey, buf);
+                        byte[] actual_buf = new byte[packet.getLength()];
+                        System.arraycopy(packet.getData(), packet.getOffset(), actual_buf, 0, packet.getLength());
+
+                        decryption new_decryption = new decryption(mykey, actual_buf);
                         final String message = new_decryption.decrypt();
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                client_tv_2.append(DateUtil.getNowTime() + "Receive: " + message + "\n");
+                                client_tv_1.append(message + "\n");
                             }
                         });
                     }
                 }
-
-                // if break from the loop, then stop the thread
-                Thread.currentThread().interrupt();
             }
             catch (Exception e) {
                 Log.d(TAG, "Wrong client receiving thread");
@@ -863,7 +853,7 @@ public class client
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        client_tv_2.append(DateUtil.getNowTime() +" client send message\n");
+                        client_tv_1.append(DateUtil.getNowTime() +"\nclient send message\n");
                     }
                 });
             }
@@ -873,6 +863,35 @@ public class client
             }
         }
     }
+
+
+    class waiting implements Runnable{
+
+        @Override
+        public void run(){
+            try{
+                Thread.sleep(4000);
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
+            if (messenge_counter == 0){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        client_tv_1.append(DateUtil.getNowTime() +"\nPair fail\n");
+                        client_connection_status.setText("Pair fail");
+                    }
+                });
+                // stop the listening thread
+                listening_flag = false;
+            }
+        }
+    }
+
+
+
 
 
     /*function: get the local host ip address
